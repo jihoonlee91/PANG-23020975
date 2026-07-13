@@ -92,6 +92,15 @@ const BUFF_LABELS: Record<'doubleWire' | 'clock' | 'hourglass', string> = {
   hourglass: 'Hourglass (Slow)',
 }
 
+const ITEM_ANNOUNCEMENTS: Record<ItemType, string> = {
+  doubleWire: 'Double Wire!',
+  clock: 'Time Stop!',
+  hourglass: 'Slow Motion!',
+  barrier: 'Barrier!',
+  oneUp: '+1 HP!',
+  dynamite: 'Dynamite!',
+}
+
 type Particle = {
   x: number
   y: number
@@ -108,6 +117,7 @@ type Popup = {
   text: string
   life: number
   maxLife: number
+  color?: string
 }
 
 function drawSky(ctx: CanvasRenderingContext2D, top: string, bottom: string) {
@@ -760,6 +770,14 @@ function GamePlay({ stageIndex, onClear, onGameOver }: Props) {
             ...itemsRef.current.slice(pickupIndex + 1),
           ]
           playItemSound()
+          popupsRef.current.push({
+            x: picked.x,
+            y: picked.y - 16,
+            text: ITEM_ANNOUNCEMENTS[picked.type],
+            life: 900,
+            maxLife: 900,
+            color: ITEM_COLORS[picked.type],
+          })
 
           switch (picked.type) {
             case 'doubleWire':
@@ -922,7 +940,7 @@ function GamePlay({ stageIndex, onClear, onGameOver }: Props) {
       ctx.textAlign = 'center'
       for (const p of popupsRef.current) {
         ctx.globalAlpha = p.life / p.maxLife
-        ctx.fillStyle = '#b45309'
+        ctx.fillStyle = p.color ?? '#b45309'
         ctx.fillText(p.text, p.x, p.y)
         ctx.globalAlpha = 1
       }
