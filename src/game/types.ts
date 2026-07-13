@@ -10,6 +10,22 @@ export type Ball = {
 export type Harpoon = {
   x: number
   y: number
-} | null
+}
+
+export type ItemType =
+  | 'doubleWire'
+  | 'clock'
+  | 'hourglass'
+  | 'barrier'
+  | 'oneUp'
+  | 'dynamite'
+
+export type Item = {
+  id: number
+  x: number
+  y: number
+  vy: number
+  type: ItemType
+}
 
 export type StageResult = 'clear' | 'gameover'

@@ -1,3 +1,5 @@
+import type { ItemType } from './types'
+
 export const CANVAS_WIDTH = 960
 export const CANVAS_HEIGHT = 540
 
@@ -29,3 +31,26 @@ export const OBSTACLE_X = CANVAS_WIDTH / 2 - OBSTACLE_WIDTH / 2
 export const OBSTACLE_Y = CANVAS_HEIGHT / 2 - OBSTACLE_HEIGHT / 2
 
 export const HIGH_SCORE_KEY = 'pang_high_score'
+
+// --- Power-up items ---
+export const ITEM_RADIUS = 12
+export const ITEM_GRAVITY = 260
+export const ITEM_DROP_CHANCE = 0.14
+// Relative weights within a drop: double wire/clock/hourglass/barrier are common,
+// 1UP and dynamite are intentionally rare (dynamite is a risk item, 1UP is a reward item).
+export const ITEM_WEIGHTS: [ItemType, number][] = [
+  ['doubleWire', 22],
+  ['clock', 20],
+  ['hourglass', 20],
+  ['barrier', 20],
+  ['oneUp', 9],
+  ['dynamite', 9],
+]
+
+export const MAX_HARPOONS_DEFAULT = 1
+export const MAX_HARPOONS_DOUBLE_WIRE = 2
+
+export const DOUBLE_WIRE_DURATION_MS = 12000
+export const CLOCK_DURATION_MS = 6000
+export const HOURGLASS_DURATION_MS = 8000
+export const HOURGLASS_SLOW_FACTOR = 0.4

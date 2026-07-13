@@ -17,6 +17,13 @@ import {
   OBSTACLE_Y,
   OBSTACLE_WIDTH,
   OBSTACLE_HEIGHT,
+  ITEM_RADIUS,
+  MAX_HARPOONS_DEFAULT,
+  MAX_HARPOONS_DOUBLE_WIRE,
+  DOUBLE_WIRE_DURATION_MS,
+  CLOCK_DURATION_MS,
+  HOURGLASS_DURATION_MS,
+  HOURGLASS_SLOW_FACTOR,
 } from './game/constants'
 import {
   createStage,
@@ -25,13 +32,18 @@ import {
   harpoonHitsBall,
   harpoonHitsObstacle,
   ballHitsPlayer,
+  rollItemDrop,
+  stepItem,
+  itemHitsPlayer,
+  explodeToSmallest,
 } from './game/engine'
-import type { Ball, Harpoon } from './game/types'
+import type { Ball, Harpoon, Item, ItemType } from './game/types'
 import {
   playHitSound,
   playPlayerHitSound,
   playClearSound,
   playGameOverSound,
+  playItemSound,
   startBgm,
   stopBgm,
 } from './game/audio'
@@ -42,12 +54,37 @@ const STAGE_NAMES = ['후지산(일본)', '계림(중국)', '에메랄드사원(
 
 const HINTS = [
   '← → 또는 A / D : 이동',
-  'Space : 발사 (발사체는 하나만 유지)',
+  'Space : 발사 (발사체는 기본 하나만 유지, 더블 와이어 획득 시 2개)',
   '공을 맞히면 작아지며 둘로 분열, 가장 작을 때 맞히면 제거',
   '줄무늬 발판은 발사체를 막고 공을 튕겨냅니다',
   '짧은 시간 안에 연속으로 맞히면 콤보 점수 배율 증가',
   '공에 닿으면 HP 1 감소, 이후 잠깐 무적 시간이 주어집니다',
+  '가끔 공을 맞히면 아이템이 떨어집니다 — 닿으면 즉시 효과 발동',
 ]
+
+const ITEM_LABELS: Record<ItemType, string> = {
+  doubleWire: 'D',
+  clock: 'C',
+  hourglass: 'H',
+  barrier: 'B',
+  oneUp: '+',
+  dynamite: '!',
+}
+
+const ITEM_COLORS: Record<ItemType, string> = {
+  doubleWire: '#38bdf8',
+  clock: '#a5b4fc',
+  hourglass: '#fbbf24',
+  barrier: '#34d399',
+  oneUp: '#f472b6',
+  dynamite: '#f87171',
+}
+
+const BUFF_LABELS: Record<'doubleWire' | 'clock' | 'hourglass', string> = {
+  doubleWire: '더블 와이어',
+  clock: '시계(정지)',
+  hourglass: '모래시계(감속)',
+}
 
 type Particle = {
   x: number
@@ -397,6 +434,29 @@ function drawBall(ctx: CanvasRenderingContext2D, ball: Ball) {
   ctx.stroke()
 }
 
+function drawItem(ctx: CanvasRenderingContext2D, item: Item) {
+  const color = ITEM_COLORS[item.type]
+
+  ctx.save()
+  ctx.shadowColor = color
+  ctx.shadowBlur = 10
+  ctx.beginPath()
+  ctx.arc(item.x, item.y, ITEM_RADIUS, 0, Math.PI * 2)
+  ctx.fillStyle = color
+  ctx.fill()
+  ctx.lineWidth = 2
+  ctx.strokeStyle = '#ffffffcc'
+  ctx.stroke()
+  ctx.restore()
+
+  ctx.fillStyle = '#0f172a'
+  ctx.font = "bold 13px 'Galmuri11', monospace"
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(ITEM_LABELS[item.type], item.x, item.y + 1)
+  ctx.textBaseline = 'alphabetic'
+}
+
 function spawnBurst(particles: Particle[], x: number, y: number, color: string) {
   const count = 10
   for (let i = 0; i < count; i++) {
@@ -420,28 +480,47 @@ type Props = {
   onGameOver: (score: number) => void
 }
 
+type BuffDisplay = {
+  doubleWire: number
+  clock: number
+  hourglass: number
+  barrier: number
+}
+
+const NO_BUFFS: BuffDisplay = { doubleWire: 0, clock: 0, hourglass: 0, barrier: 0 }
+
 function GamePlay({ stageIndex, onClear, onGameOver }: Props) {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const playerXRef = useRef(CANVAS_WIDTH / 2)
   const ballsRef = useRef<Ball[]>(createStage(stageIndex))
-  const harpoonRef = useRef<Harpoon>(null)
+  const harpoonsRef = useRef<Harpoon[]>([])
+  const itemsRef = useRef<Item[]>([])
   const hpRef = useRef(MAX_HP)
   const invulnUntilRef = useRef(0)
   const comboRef = useRef(0)
   const lastHitAtRef = useRef(0)
   const scoreRef = useRef(0)
   const nextIdRef = useRef(1000 * (stageIndex + 1))
+  const nextItemIdRef = useRef(1)
   const keysRef = useRef<Record<string, boolean>>({})
   const endedRef = useRef(false)
   const particlesRef = useRef<Particle[]>([])
   const popupsRef = useRef<Popup[]>([])
 
+  const doubleWireUntilRef = useRef(0)
+  const clockUntilRef = useRef(0)
+  const hourglassUntilRef = useRef(0)
+  const barrierCountRef = useRef(0)
+  const buffsDisplayRef = useRef<BuffDisplay>(NO_BUFFS)
+
   const [hp, setHp] = useState(MAX_HP)
   const [score, setScore] = useState(0)
+  const [buffs, setBuffs] = useState<BuffDisplay>(NO_BUFFS)
 
   useEffect(() => {
     ballsRef.current = createStage(stageIndex)
-    harpoonRef.current = null
+    harpoonsRef.current = []
+    itemsRef.current = []
     hpRef.current = MAX_HP
     invulnUntilRef.current = 0
     comboRef.current = 0
@@ -449,7 +528,13 @@ function GamePlay({ stageIndex, onClear, onGameOver }: Props) {
     endedRef.current = false
     particlesRef.current = []
     popupsRef.current = []
+    doubleWireUntilRef.current = 0
+    clockUntilRef.current = 0
+    hourglassUntilRef.current = 0
+    barrierCountRef.current = 0
+    buffsDisplayRef.current = NO_BUFFS
     setHp(MAX_HP)
+    setBuffs(NO_BUFFS)
   }, [stageIndex])
 
   useEffect(() => {
@@ -487,6 +572,11 @@ function GamePlay({ stageIndex, onClear, onGameOver }: Props) {
       return nextIdRef.current
     }
 
+    const nextItemId = () => {
+      nextItemIdRef.current += 1
+      return nextItemIdRef.current
+    }
+
     const loop = (time: number) => {
       if (lastTime === null) lastTime = time
       const dtSec = Math.min((time - lastTime) / 1000, 0.05)
@@ -503,28 +593,40 @@ function GamePlay({ stageIndex, onClear, onGameOver }: Props) {
           CANVAS_WIDTH - PLAYER_WIDTH / 2,
         )
 
-        if (keys[' '] && !harpoonRef.current) {
-          harpoonRef.current = { x: playerXRef.current, y: PLAYER_Y }
+        const isClockActive = time < clockUntilRef.current
+        const isHourglassActive = !isClockActive && time < hourglassUntilRef.current
+        const maxHarpoons =
+          time < doubleWireUntilRef.current
+            ? MAX_HARPOONS_DOUBLE_WIRE
+            : MAX_HARPOONS_DEFAULT
+
+        if (keys[' '] && harpoonsRef.current.length < maxHarpoons) {
+          harpoonsRef.current = [
+            ...harpoonsRef.current,
+            { x: playerXRef.current, y: PLAYER_Y },
+          ]
         }
 
-        if (harpoonRef.current) {
-          harpoonRef.current.y -= HARPOON_SPEED * dtSec
-          if (
-            harpoonRef.current.y <= 0 ||
-            harpoonHitsObstacle(harpoonRef.current.x, harpoonRef.current.y)
-          ) {
-            harpoonRef.current = null
-          }
+        harpoonsRef.current = harpoonsRef.current
+          .map((h) => ({ x: h.x, y: h.y - HARPOON_SPEED * dtSec }))
+          .filter((h) => h.y > 0 && !harpoonHitsObstacle(h.x, h.y))
+
+        if (!isClockActive) {
+          const ballDt = isHourglassActive ? dtSec * HOURGLASS_SLOW_FACTOR : dtSec
+          ballsRef.current = ballsRef.current.map((b) => stepBall(b, ballDt))
         }
 
-        ballsRef.current = ballsRef.current.map((b) => stepBall(b, dtSec))
+        if (harpoonsRef.current.length > 0) {
+          const remainingHarpoons: Harpoon[] = []
+          for (const h of harpoonsRef.current) {
+            const hitIndex = ballsRef.current.findIndex((b) =>
+              harpoonHitsBall(h.x, h.y, b),
+            )
+            if (hitIndex === -1) {
+              remainingHarpoons.push(h)
+              continue
+            }
 
-        if (harpoonRef.current) {
-          const h = harpoonRef.current
-          const hitIndex = ballsRef.current.findIndex((b) =>
-            harpoonHitsBall(h.x, h.y, b),
-          )
-          if (hitIndex !== -1) {
             const hitBall = ballsRef.current[hitIndex]
             const children = splitBall(hitBall, nextId)
 
@@ -561,26 +663,112 @@ function GamePlay({ stageIndex, onClear, onGameOver }: Props) {
               ...ballsRef.current.slice(hitIndex + 1),
               ...children,
             ]
-            harpoonRef.current = null
+
+            const droppedType = rollItemDrop()
+            if (droppedType) {
+              itemsRef.current = [
+                ...itemsRef.current,
+                {
+                  id: nextItemId(),
+                  x: hitBall.x,
+                  y: hitBall.y,
+                  vy: 30,
+                  type: droppedType,
+                },
+              ]
+            }
           }
+          harpoonsRef.current = remainingHarpoons
         }
 
-        if (time >= invulnUntilRef.current) {
+        if (!isClockActive && time >= invulnUntilRef.current) {
           const hit = ballsRef.current.some((b) =>
             ballHitsPlayer(b, playerXRef.current),
           )
           if (hit) {
-            hpRef.current -= 1
-            setHp(hpRef.current)
             invulnUntilRef.current = time + INVULN_MS
-            playPlayerHitSound()
-            if (hpRef.current <= 0) {
-              endedRef.current = true
-              playGameOverSound()
-              stopBgm()
-              onGameOver(scoreRef.current)
+            if (barrierCountRef.current > 0) {
+              barrierCountRef.current -= 1
+            } else {
+              hpRef.current -= 1
+              setHp(hpRef.current)
+              playPlayerHitSound()
+              if (hpRef.current <= 0) {
+                endedRef.current = true
+                playGameOverSound()
+                stopBgm()
+                onGameOver(scoreRef.current)
+              }
             }
           }
+        }
+
+        itemsRef.current = itemsRef.current
+          .map((item) => stepItem(item, dtSec))
+          .filter((item) => item.y - ITEM_RADIUS < CANVAS_HEIGHT)
+
+        const pickupIndex = itemsRef.current.findIndex((item) =>
+          itemHitsPlayer(item, playerXRef.current),
+        )
+        if (pickupIndex !== -1) {
+          const picked = itemsRef.current[pickupIndex]
+          itemsRef.current = [
+            ...itemsRef.current.slice(0, pickupIndex),
+            ...itemsRef.current.slice(pickupIndex + 1),
+          ]
+          playItemSound()
+
+          switch (picked.type) {
+            case 'doubleWire':
+              doubleWireUntilRef.current = time + DOUBLE_WIRE_DURATION_MS
+              break
+            case 'clock':
+              clockUntilRef.current = time + CLOCK_DURATION_MS
+              break
+            case 'hourglass':
+              hourglassUntilRef.current = time + HOURGLASS_DURATION_MS
+              break
+            case 'barrier':
+              barrierCountRef.current += 1
+              break
+            case 'oneUp':
+              hpRef.current = Math.min(MAX_HP, hpRef.current + 1)
+              setHp(hpRef.current)
+              break
+            case 'dynamite':
+              for (const b of ballsRef.current) {
+                spawnBurst(particlesRef.current, b.x, b.y, BALL_COLORS[b.level])
+              }
+              ballsRef.current = explodeToSmallest(ballsRef.current, nextId)
+              break
+          }
+        }
+
+        const doubleWireSec = Math.max(
+          0,
+          Math.ceil((doubleWireUntilRef.current - time) / 1000),
+        )
+        const clockSec = Math.max(0, Math.ceil((clockUntilRef.current - time) / 1000))
+        const hourglassSec = Math.max(
+          0,
+          Math.ceil((hourglassUntilRef.current - time) / 1000),
+        )
+        const barrierCount = barrierCountRef.current
+        const prevBuffs = buffsDisplayRef.current
+        if (
+          prevBuffs.doubleWire !== doubleWireSec ||
+          prevBuffs.clock !== clockSec ||
+          prevBuffs.hourglass !== hourglassSec ||
+          prevBuffs.barrier !== barrierCount
+        ) {
+          const nextBuffs: BuffDisplay = {
+            doubleWire: doubleWireSec,
+            clock: clockSec,
+            hourglass: hourglassSec,
+            barrier: barrierCount,
+          }
+          buffsDisplayRef.current = nextBuffs
+          setBuffs(nextBuffs)
         }
 
         if (!endedRef.current && ballsRef.current.length === 0) {
@@ -607,21 +795,25 @@ function GamePlay({ stageIndex, onClear, onGameOver }: Props) {
       drawBackground(ctx, stageIndex)
       drawObstacle(ctx)
 
-      if (harpoonRef.current) {
+      for (const h of harpoonsRef.current) {
         ctx.save()
         ctx.shadowColor = '#ffffff'
         ctx.shadowBlur = 8
         ctx.strokeStyle = '#374151'
         ctx.lineWidth = 3
         ctx.beginPath()
-        ctx.moveTo(harpoonRef.current.x, PLAYER_Y)
-        ctx.lineTo(harpoonRef.current.x, harpoonRef.current.y)
+        ctx.moveTo(h.x, PLAYER_Y)
+        ctx.lineTo(h.x, h.y)
         ctx.stroke()
         ctx.restore()
       }
 
       for (const b of ballsRef.current) {
         drawBall(ctx, b)
+      }
+
+      for (const item of itemsRef.current) {
+        drawItem(ctx, item)
       }
 
       for (const p of particlesRef.current) {
@@ -725,6 +917,23 @@ function GamePlay({ stageIndex, onClear, onGameOver }: Props) {
                 </li>
               ))}
             </ol>
+          </div>
+          <div>
+            <h3>버프</h3>
+            <ul className="hint-list buff-list">
+              {(['doubleWire', 'clock', 'hourglass'] as const)
+                .filter((key) => buffs[key] > 0)
+                .map((key) => (
+                  <li key={key}>
+                    {BUFF_LABELS[key]} {buffs[key]}s
+                  </li>
+                ))}
+              {buffs.barrier > 0 && <li>배리어 x{buffs.barrier}</li>}
+              {buffs.doubleWire === 0 &&
+                buffs.clock === 0 &&
+                buffs.hourglass === 0 &&
+                buffs.barrier === 0 && <li>없음</li>}
+            </ul>
           </div>
           <div>
             <h3>도움말</h3>

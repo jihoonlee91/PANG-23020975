@@ -13,8 +13,12 @@ import {
   OBSTACLE_Y,
   OBSTACLE_WIDTH,
   OBSTACLE_HEIGHT,
+  ITEM_RADIUS,
+  ITEM_GRAVITY,
+  ITEM_DROP_CHANCE,
+  ITEM_WEIGHTS,
 } from './constants'
-import type { Ball } from './types'
+import type { Ball, Item, ItemType } from './types'
 
 export function createStage(stageIndex: number): Ball[] {
   const count = stageIndex + 1
@@ -131,4 +135,59 @@ export function ballHitsPlayer(ball: Ball, playerX: number): boolean {
   const dx = ball.x - closestX
   const dy = ball.y - closestY
   return dx * dx + dy * dy <= r * r
+}
+
+/**
+ * Recursively splits every ball down to the smallest level (0), used by the
+ * dynamite item. Unlike a single splitBall call, this keeps splitting each
+ * resulting child until nothing but level-0 balls remain.
+ */
+export function explodeToSmallest(balls: Ball[], nextId: () => number): Ball[] {
+  const result: Ball[] = []
+  const queue = [...balls]
+  while (queue.length > 0) {
+    const ball = queue.pop()
+    if (!ball) continue
+    if (ball.level === 0) {
+      result.push(ball)
+    } else {
+      queue.push(...splitBall(ball, nextId))
+    }
+  }
+  return result
+}
+
+/**
+ * Rolls whether a hit ball drops an item, and if so, which type. Double
+ * wire / clock / hourglass / barrier are common; 1UP (reward) and dynamite
+ * (risk) are intentionally rare.
+ */
+export function rollItemDrop(rand: () => number = Math.random): ItemType | null {
+  if (rand() > ITEM_DROP_CHANCE) return null
+
+  const total = ITEM_WEIGHTS.reduce((sum, [, weight]) => sum + weight, 0)
+  let roll = rand() * total
+  for (const [type, weight] of ITEM_WEIGHTS) {
+    if (roll < weight) return type
+    roll -= weight
+  }
+  return ITEM_WEIGHTS[ITEM_WEIGHTS.length - 1][0]
+}
+
+export function stepItem(item: Item, dtSec: number): Item {
+  const vy = item.vy + ITEM_GRAVITY * dtSec
+  const y = item.y + vy * dtSec
+  return { ...item, y, vy }
+}
+
+export function itemHitsPlayer(item: Item, playerX: number): boolean {
+  const halfW = PLAYER_WIDTH / 2
+  const halfH = PLAYER_HEIGHT / 2
+
+  const closestX = Math.min(Math.max(item.x, playerX - halfW), playerX + halfW)
+  const closestY = Math.min(Math.max(item.y, PLAYER_Y - halfH), PLAYER_Y + halfH)
+
+  const dx = item.x - closestX
+  const dy = item.y - closestY
+  return dx * dx + dy * dy <= ITEM_RADIUS * ITEM_RADIUS
 }
