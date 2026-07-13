@@ -38,7 +38,7 @@ import {
 
 const BALL_COLORS = ['#fb7185', '#facc15', '#38bdf8']
 const GROUND_Y = CANVAS_HEIGHT - 90
-const STAGE_NAMES = ['일본', '이집트', '바르셀로나', '그리스', '로마']
+const STAGE_NAMES = ['후지산(일본)', '계림(중국)', '에메랄드사원(태국)', '앙코르와트(캄보디아)', '에어즈록(호주)']
 
 const HINTS = [
   '← → 또는 A / D : 이동',
@@ -119,131 +119,202 @@ function drawJapanBackground(ctx: CanvasRenderingContext2D) {
   drawGround(ctx, '#7cc86e', '#4f9b45')
 }
 
-function drawEgyptBackground(ctx: CanvasRenderingContext2D) {
-  drawSky(ctx, '#ffd394', '#ffe9c7')
-
-  ctx.fillStyle = '#fff4d6'
+function drawKarstPeak(
+  ctx: CanvasRenderingContext2D,
+  cx: number,
+  baseY: number,
+  width: number,
+  height: number,
+  color: string,
+) {
+  const top = baseY - height
+  ctx.fillStyle = color
   ctx.beginPath()
-  ctx.arc(CANVAS_WIDTH - 120, 90, 40, 0, Math.PI * 2)
+  ctx.moveTo(cx - width / 2, baseY)
+  ctx.bezierCurveTo(
+    cx - width / 2,
+    top + height * 0.5,
+    cx - width * 0.22,
+    top + height * 0.1,
+    cx,
+    top,
+  )
+  ctx.bezierCurveTo(
+    cx + width * 0.22,
+    top + height * 0.1,
+    cx + width / 2,
+    top + height * 0.5,
+    cx + width / 2,
+    baseY,
+  )
+  ctx.closePath()
+  ctx.fill()
+}
+
+function drawGuilinBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#bfe3e0', '#eaf6f2')
+
+  ctx.fillStyle = '#ffffff88'
+  ctx.beginPath()
+  ctx.ellipse(700, 110, 60, 14, 0, 0, Math.PI * 2)
+  ctx.ellipse(150, 160, 70, 16, 0, 0, Math.PI * 2)
   ctx.fill()
 
   const baseY = GROUND_Y
-  const pyramids = [
-    { cx: CANVAS_WIDTH / 2 - 160, height: 170, width: 200, color: '#d9a86a' },
-    { cx: CANVAS_WIDTH / 2 + 120, height: 130, width: 160, color: '#c9925a' },
-    { cx: CANVAS_WIDTH / 2 - 20, height: 210, width: 240, color: '#e0b57a' },
+  const farPeaks = [
+    { cx: 120, w: 160, h: 150 },
+    { cx: 320, w: 200, h: 190 },
+    { cx: 560, w: 170, h: 160 },
+    { cx: 800, w: 210, h: 200 },
   ]
-  for (const p of pyramids) {
-    ctx.fillStyle = p.color
+  for (const p of farPeaks) {
+    drawKarstPeak(ctx, p.cx, baseY - 20, p.w, p.h, '#9db8ae')
+  }
+
+  const nearPeaks = [
+    { cx: 220, w: 190, h: 230 },
+    { cx: 480, w: 230, h: 260 },
+    { cx: 720, w: 200, h: 240 },
+  ]
+  for (const p of nearPeaks) {
+    drawKarstPeak(ctx, p.cx, baseY, p.w, p.h, '#5f8a76')
+  }
+
+  const river = ctx.createLinearGradient(0, baseY - 10, 0, baseY + 20)
+  river.addColorStop(0, '#cdeee6')
+  river.addColorStop(1, '#a9d8cd')
+  ctx.fillStyle = river
+  ctx.fillRect(0, baseY - 10, CANVAS_WIDTH, 30)
+
+  drawGround(ctx, '#8fbf9a', '#5c9468')
+}
+
+function drawEmeraldTempleBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#ffd97a', '#ffe9c2')
+
+  ctx.fillStyle = '#fff3d1'
+  ctx.beginPath()
+  ctx.arc(CANVAS_WIDTH - 130, 90, 44, 0, Math.PI * 2)
+  ctx.fill()
+
+  const baseY = GROUND_Y
+  const cx = CANVAS_WIDTH / 2
+
+  const tiers = [
+    { w: 340, h: 26, y: 0 },
+    { w: 280, h: 24, y: -60 },
+    { w: 220, h: 22, y: -114 },
+    { w: 150, h: 20, y: -160 },
+  ]
+  for (const t of tiers) {
+    const y = baseY - 90 + t.y
+    ctx.fillStyle = '#c23b3b'
     ctx.beginPath()
-    ctx.moveTo(p.cx - p.width / 2, baseY)
-    ctx.lineTo(p.cx, baseY - p.height)
-    ctx.lineTo(p.cx + p.width / 2, baseY)
+    ctx.moveTo(cx - t.w / 2, y + t.h)
+    ctx.lineTo(cx, y - t.h * 1.4)
+    ctx.lineTo(cx + t.w / 2, y + t.h)
+    ctx.closePath()
+    ctx.fill()
+    ctx.fillStyle = '#f2b73a'
+    ctx.fillRect(cx - t.w / 2, y + t.h - 6, t.w, 6)
+  }
+
+  ctx.fillStyle = '#f2b73a'
+  ctx.beginPath()
+  ctx.moveTo(cx - 8, baseY - 250)
+  ctx.lineTo(cx, baseY - 300)
+  ctx.lineTo(cx + 8, baseY - 250)
+  ctx.closePath()
+  ctx.fill()
+
+  drawGround(ctx, '#e8c98a', '#c9a35f')
+}
+
+function drawAngkorWatBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#f6b98a', '#ffe3c4')
+
+  const baseY = GROUND_Y
+  const cx = CANVAS_WIDTH / 2
+
+  ctx.fillStyle = '#8a7156'
+  ctx.fillRect(cx - 260, baseY - 70, 520, 70)
+
+  function tower(x: number, height: number, width: number) {
+    const y = baseY - 70 - height
+    ctx.beginPath()
+    ctx.moveTo(x - width / 2, baseY - 70)
+    ctx.lineTo(x - width / 2, y + height * 0.35)
+    ctx.lineTo(x, y)
+    ctx.lineTo(x + width / 2, y + height * 0.35)
+    ctx.lineTo(x + width / 2, baseY - 70)
     ctx.closePath()
     ctx.fill()
   }
 
-  drawGround(ctx, '#e6c58a', '#c9a35f')
+  ctx.fillStyle = '#6b5842'
+  tower(cx - 200, 90, 55)
+  tower(cx + 200, 90, 55)
+  ctx.fillStyle = '#7a6449'
+  tower(cx - 100, 140, 65)
+  tower(cx + 100, 140, 65)
+  ctx.fillStyle = '#8a7150'
+  tower(cx, 210, 80)
+
+  drawGround(ctx, '#d9be93', '#b3946a')
 }
 
-function drawBarcelonaBackground(ctx: CanvasRenderingContext2D) {
-  drawSky(ctx, '#8fd3f4', '#e0f7fa')
+function drawAyersRockBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#ff9d6c', '#ffd9a8')
 
-  const baseY = GROUND_Y
-  ctx.fillStyle = '#e0a58c'
-  const buildingWidths = [70, 90, 60, 80, 70]
-  let x = 40
-  buildingWidths.forEach((w, i) => {
-    const h = 80 + (i % 3) * 30
-    ctx.fillRect(x, baseY - h, w, h)
-    x += w + 16
-  })
-
-  const spireX = CANVAS_WIDTH / 2 + 40
-  const spireBase = baseY - 60
-  const spireTop = baseY - 240
-  ctx.fillStyle = '#caa06b'
+  ctx.fillStyle = '#ffffffcc'
   ctx.beginPath()
-  ctx.moveTo(spireX - 22, spireBase)
-  ctx.lineTo(spireX, spireTop)
-  ctx.lineTo(spireX + 22, spireBase)
-  ctx.closePath()
-  ctx.fill()
-  ctx.beginPath()
-  ctx.arc(spireX, spireTop - 8, 6, 0, Math.PI * 2)
+  ctx.arc(CANVAS_WIDTH / 2, 100, 46, 0, Math.PI * 2)
   ctx.fill()
 
-  drawGround(ctx, '#c9c9d1', '#9a9aa5')
-}
-
-function drawGreeceBackground(ctx: CanvasRenderingContext2D) {
-  drawSky(ctx, '#8fd3f4', '#eaf6ff')
-
   const baseY = GROUND_Y
-  const templeWidth = 320
-  const templeX = CANVAS_WIDTH / 2 - templeWidth / 2
-  const columnTop = baseY - 130
-
-  ctx.fillStyle = '#f5f0e6'
+  const rockGradient = ctx.createLinearGradient(0, baseY - 160, 0, baseY)
+  rockGradient.addColorStop(0, '#b5522f')
+  rockGradient.addColorStop(1, '#7a3420')
+  ctx.fillStyle = rockGradient
   ctx.beginPath()
-  ctx.moveTo(templeX - 20, columnTop)
-  ctx.lineTo(CANVAS_WIDTH / 2, columnTop - 60)
-  ctx.lineTo(templeX + templeWidth + 20, columnTop)
+  ctx.moveTo(CANVAS_WIDTH / 2 - 260, baseY)
+  ctx.bezierCurveTo(
+    CANVAS_WIDTH / 2 - 200,
+    baseY - 150,
+    CANVAS_WIDTH / 2 - 80,
+    baseY - 170,
+    CANVAS_WIDTH / 2,
+    baseY - 160,
+  )
+  ctx.bezierCurveTo(
+    CANVAS_WIDTH / 2 + 90,
+    baseY - 150,
+    CANVAS_WIDTH / 2 + 200,
+    baseY - 110,
+    CANVAS_WIDTH / 2 + 260,
+    baseY,
+  )
   ctx.closePath()
   ctx.fill()
 
-  ctx.fillRect(templeX - 20, columnTop, templeWidth + 40, 12)
-
-  const columnCount = 7
-  const columnWidth = 18
-  const gap = (templeWidth - columnCount * columnWidth) / (columnCount - 1)
-  for (let i = 0; i < columnCount; i++) {
-    const cx = templeX + i * (columnWidth + gap)
-    ctx.fillRect(cx, columnTop + 12, columnWidth, baseY - columnTop - 12)
-  }
-
-  drawGround(ctx, '#e6ddc8', '#c9bd9f')
-}
-
-function drawRomeBackground(ctx: CanvasRenderingContext2D) {
-  drawSky(ctx, '#f6b394', '#ffe0c2')
-
-  const baseY = GROUND_Y
-  const width = 380
-  const height = 140
-  const x = CANVAS_WIDTH / 2 - width / 2
-  const y = baseY - height
-
-  ctx.fillStyle = '#e3c9a8'
-  ctx.beginPath()
-  ctx.moveTo(x, baseY)
-  ctx.lineTo(x, y + 20)
-  ctx.quadraticCurveTo(x, y, x + 20, y)
-  ctx.lineTo(x + width - 20, y)
-  ctx.quadraticCurveTo(x + width, y, x + width, y + 20)
-  ctx.lineTo(x + width, baseY)
-  ctx.closePath()
-  ctx.fill()
-
-  ctx.fillStyle = '#c9a97f'
-  const archCount = 8
-  const archWidth = width / archCount
-  for (let i = 0; i < archCount; i++) {
-    const ax = x + i * archWidth + archWidth * 0.25
+  ctx.strokeStyle = '#5c2717aa'
+  ctx.lineWidth = 3
+  for (let i = 0; i < 4; i++) {
     ctx.beginPath()
-    ctx.arc(ax + archWidth * 0.1, y + 40, archWidth * 0.28, Math.PI, 0)
-    ctx.fill()
+    ctx.moveTo(CANVAS_WIDTH / 2 - 150 + i * 90, baseY - 20 - i * 4)
+    ctx.lineTo(CANVAS_WIDTH / 2 - 90 + i * 90, baseY - 90 - i * 6)
+    ctx.stroke()
   }
 
-  drawGround(ctx, '#d8b98f', '#b3946a')
+  drawGround(ctx, '#e0925c', '#b56a3c')
 }
 
 const BACKGROUNDS = [
   drawJapanBackground,
-  drawEgyptBackground,
-  drawBarcelonaBackground,
-  drawGreeceBackground,
-  drawRomeBackground,
+  drawGuilinBackground,
+  drawEmeraldTempleBackground,
+  drawAngkorWatBackground,
+  drawAyersRockBackground,
 ]
 
 function drawBackground(ctx: CanvasRenderingContext2D, stageIndex: number) {

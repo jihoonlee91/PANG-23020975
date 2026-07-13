@@ -1,3 +1,12 @@
+:root {
+  --font-game: 'Galmuri11', monospace;
+  --fs-xs: 11px;
+  --fs-sm: 13px;
+  --fs-md: 16px;
+  --fs-lg: 20px;
+  --fs-xl: 28px;
+}
+
 #root {
   display: flex;
   align-items: center;
@@ -44,6 +53,7 @@
     0 20px 40px rgba(30, 41, 59, 0.2),
     0 0 0 1px rgba(255, 255, 255, 0.4) inset;
   color: #1e293b;
+  font-family: var(--font-game);
   text-align: center;
   animation: screen-in 0.35s ease-out;
 }
@@ -51,8 +61,8 @@
 .screen h1 {
   margin: 0;
   padding: 0 4px;
-  font-family: 'Galmuri11', monospace;
-  font-size: 28px;
+  font-family: var(--font-game);
+  font-size: var(--fs-xl);
   line-height: 1.6;
   letter-spacing: 2px;
   background: linear-gradient(90deg, #fb7185, #f59e0b, #38bdf8, #f59e0b, #fb7185);
@@ -65,30 +75,30 @@
 
 .screen p {
   margin: 0;
-  font-family: 'Galmuri11', monospace;
-  font-size: 20px;
+  font-family: var(--font-game);
+  font-size: var(--fs-lg);
   letter-spacing: 0.5px;
   color: #475569;
 }
 
 .result-score {
-  font-family: 'Galmuri11', monospace;
-  font-size: 16px;
+  font-family: var(--font-game);
+  font-size: var(--fs-md);
   line-height: 1.8;
   color: #1e293b;
 }
 
 .result-high-score {
-  font-family: 'Galmuri11', monospace;
-  font-size: 12px;
+  font-family: var(--font-game);
+  font-size: var(--fs-sm);
   line-height: 1.8;
   color: #f59e0b;
 }
 
 .screen-button {
   padding: 14px 28px;
-  font-family: 'Galmuri11', monospace;
-  font-size: 13px;
+  font-family: var(--font-game);
+  font-size: var(--fs-sm);
   color: #ffffff;
   background: linear-gradient(90deg, #38bdf8, #0ea5e9);
   border: none;
@@ -115,6 +125,7 @@
   align-items: center;
   gap: 12px;
   width: 100%;
+  font-family: var(--font-game);
 }
 
 .gameplay-hud {
@@ -124,8 +135,8 @@
   width: min(1400px, 96vw);
   padding: 8px 4px;
   color: #1e293b;
-  font-family: 'Galmuri11', monospace;
-  font-size: 12px;
+  font-family: var(--font-game);
+  font-size: var(--fs-sm);
   line-height: 1.8;
 }
 
@@ -173,13 +184,14 @@
   background: #ffffff;
   box-shadow: 0 10px 24px rgba(30, 41, 59, 0.15);
   color: #1e293b;
+  font-family: var(--font-game);
   text-align: left;
 }
 
 .hint-panel h3 {
   margin: 0 0 8px;
-  font-family: 'Galmuri11', monospace;
-  font-size: 11px;
+  font-family: var(--font-game);
+  font-size: var(--fs-xs);
   line-height: 1.6;
   color: #0f172a;
 }
@@ -191,8 +203,8 @@
   display: flex;
   flex-direction: column;
   gap: 4px;
-  font-family: 'Galmuri11', monospace;
-  font-size: 17px;
+  font-family: var(--font-game);
+  font-size: var(--fs-sm);
 }
 
 .stage-current {
@@ -208,8 +220,8 @@
 .hint-list {
   margin: 0;
   padding-left: 18px;
-  font-family: 'Galmuri11', monospace;
-  font-size: 17px;
-  line-height: 1.5;
+  font-family: var(--font-game);
+  font-size: var(--fs-sm);
+  line-height: 1.6;
   color: #334155;
 }
