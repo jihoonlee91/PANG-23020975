@@ -1,5 +1,5 @@
-export const CANVAS_WIDTH = 480
-export const CANVAS_HEIGHT = 640
+export const CANVAS_WIDTH = 960
+export const CANVAS_HEIGHT = 540
 
 export const PLAYER_WIDTH = 40
 export const PLAYER_HEIGHT = 16
@@ -22,5 +22,10 @@ export const SCORE_BY_LEVEL = [300, 150, 100]
 export const COMBO_WINDOW_MS = 1500
 
 export const STAGE_COUNT = 5
+
+export const OBSTACLE_WIDTH = 160
+export const OBSTACLE_HEIGHT = 18
+export const OBSTACLE_X = CANVAS_WIDTH / 2 - OBSTACLE_WIDTH / 2
+export const OBSTACLE_Y = CANVAS_HEIGHT / 2 - OBSTACLE_HEIGHT / 2
 
 export const HIGH_SCORE_KEY = 'pang_high_score'

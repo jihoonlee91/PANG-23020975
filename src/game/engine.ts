@@ -9,6 +9,10 @@ import {
   RESTITUTION,
   SPLIT_VY_BASE,
   SPLIT_VY_PER_LEVEL,
+  OBSTACLE_X,
+  OBSTACLE_Y,
+  OBSTACLE_WIDTH,
+  OBSTACLE_HEIGHT,
 } from './constants'
 import type { Ball } from './types'
 
@@ -49,7 +53,39 @@ export function stepBall(ball: Ball, dtSec: number): Ball {
     vy = -vy * RESTITUTION
   }
 
+  if (
+    x + r > OBSTACLE_X &&
+    x - r < OBSTACLE_X + OBSTACLE_WIDTH &&
+    y + r > OBSTACLE_Y &&
+    y - r < OBSTACLE_Y + OBSTACLE_HEIGHT
+  ) {
+    const fromTop = y < OBSTACLE_Y
+    const fromBottom = y > OBSTACLE_Y + OBSTACLE_HEIGHT
+    if (fromTop) {
+      y = OBSTACLE_Y - r
+      vy = -Math.abs(vy) * RESTITUTION
+    } else if (fromBottom) {
+      y = OBSTACLE_Y + OBSTACLE_HEIGHT + r
+      vy = Math.abs(vy) * RESTITUTION
+    } else if (x < OBSTACLE_X) {
+      x = OBSTACLE_X - r
+      vx = -Math.abs(vx) * RESTITUTION
+    } else {
+      x = OBSTACLE_X + OBSTACLE_WIDTH + r
+      vx = Math.abs(vx) * RESTITUTION
+    }
+  }
+
   return { ...ball, x, y, vx, vy }
+}
+
+export function harpoonHitsObstacle(harpoonX: number, harpoonY: number): boolean {
+  return (
+    harpoonX > OBSTACLE_X &&
+    harpoonX < OBSTACLE_X + OBSTACLE_WIDTH &&
+    harpoonY > OBSTACLE_Y &&
+    harpoonY < OBSTACLE_Y + OBSTACLE_HEIGHT
+  )
 }
 
 export function splitBall(ball: Ball, nextId: () => number): Ball[] {
