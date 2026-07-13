@@ -13,6 +13,6 @@
 - Max HP 3, HP decreases by 1 on collision with a ball
 - Grant 1.2 seconds of invulnerability after being hit (to prevent consecutive hits)
 - Game over at HP 0, stage clear when all balls on screen are removed
-- On the HUD, HP is shown as a filled gauge bar instead of a number
+- On the HUD, HP is shown as a filled gauge bar, with a small "current/max" number alongside it and an `aria-label` on the bar — the bar shouldn't be the only way to read HP, for colorblind players and screen readers
 - To lower the barrier to entry, a controls/strategy hint panel is shown beside the play screen (controls, split rules, combo, obstacles, invulnerability time, etc.)
 - On narrow/mobile viewports, the hint panel stacks below the canvas instead of beside it, so the canvas can use the full screen width instead of being squeezed by a fixed-width sidebar

@@ -17,3 +17,4 @@
 - Items have a small chance of dropping randomly when a ball is split/removed by a hit (`ITEM_DROP_CHANCE` = 14%), then fall under gravity and despawn if they go off-screen. Touching one as the player applies its effect immediately and plays a sound effect
 - The dropped item's type is decided via a weighted draw (`ITEM_WEIGHTS`): double wire/clock/hourglass/barrier appear relatively often (20-22 each), while 1UP and dynamite appear rarely (9 each)
 - The Vulcan missile/power wire (weapon-swap types) are excluded from this scope
+- When an item is picked up, a short-lived popup announces which effect just triggered (e.g. "Double Wire!", "Barrier!") at the pickup location, using the same popup mechanism as score-gain text (`phase4_1.md`), so the effect is never a mystery to the player
