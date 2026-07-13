@@ -12,11 +12,14 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Key Commands
 
 ```bash
-npm install       # install dependencies
-npm run dev       # run the dev server (default port 5173)
-npm run build     # type-check (tsc -b), then produce a production build with vite build
-npm run preview   # preview the built output locally
-npm run lint      # run oxlint
+npm install         # install dependencies
+npm run dev         # run the dev server (default port 5173)
+npm run build       # type-check (tsc -b), then produce a production build with vite build
+npm run preview     # preview the built output locally
+npm run lint        # run oxlint
+npm run format      # format the codebase with Prettier
+npm run format:check # check formatting without writing (used by the pre-commit hook)
+npm test            # run the Vitest test suite
 ```
 
 To only run a type check:
@@ -27,7 +30,11 @@ npx tsc --noEmit -p tsconfig.app.json
 
 ## Testing
 
-No test framework (Vitest/Jest, etc.) is currently installed. If a test-related request comes in, first let the user know that a test runner needs to be introduced. Right now, quality is only verified via `npm run lint` (Oxlint) and `npm run build` (which includes type checking).
+**Vitest** is installed. Tests live next to the code they test (e.g. `src/game/engine.test.ts`). The pure functions in `src/game/engine.ts` (physics, collisions, splitting, item rolls) are the highest-value place to add tests — they take plain data in and out, no DOM/React needed. Run `npm test` (or `npx vitest run`) before considering game-logic changes done.
+
+## Pre-commit Hook
+
+Husky runs `.husky/pre-commit` before every commit: `prettier --check`, `tsc --noEmit`, and `oxlint`, in that order. A commit is blocked if any of these fail — run `npm run format` to fix formatting issues it flags.
 
 ## Architecture
 
