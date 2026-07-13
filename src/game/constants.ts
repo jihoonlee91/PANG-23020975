@@ -9,6 +9,9 @@ export const PLAYER_SPEED = 300
 export const HARPOON_SPEED = 700
 
 export const GRAVITY = 900
+export const RESTITUTION = 0.995
+export const SPLIT_VY_BASE = 250
+export const SPLIT_VY_PER_LEVEL = 150
 
 export const MAX_HP = 3
 export const INVULN_MS = 1200

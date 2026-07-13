@@ -6,6 +6,9 @@ import {
   PLAYER_HEIGHT,
   PLAYER_Y,
   GRAVITY,
+  RESTITUTION,
+  SPLIT_VY_BASE,
+  SPLIT_VY_PER_LEVEL,
 } from './constants'
 import type { Ball } from './types'
 
@@ -32,18 +35,18 @@ export function stepBall(ball: Ball, dtSec: number): Ball {
 
   if (x - r < 0) {
     x = r
-    vx = -vx
+    vx = -vx * RESTITUTION
   } else if (x + r > CANVAS_WIDTH) {
     x = CANVAS_WIDTH - r
-    vx = -vx
+    vx = -vx * RESTITUTION
   }
 
   if (y - r < 0) {
     y = r
-    vy = -vy
+    vy = -vy * RESTITUTION
   } else if (y + r > CANVAS_HEIGHT) {
     y = CANVAS_HEIGHT - r
-    vy = -vy
+    vy = -vy * RESTITUTION
   }
 
   return { ...ball, x, y, vx, vy }
@@ -54,10 +57,11 @@ export function splitBall(ball: Ball, nextId: () => number): Ball[] {
 
   const level = ball.level - 1
   const speed = Math.max(Math.abs(ball.vx), 80)
+  const vy = -(SPLIT_VY_BASE + level * SPLIT_VY_PER_LEVEL)
 
   return [
-    { id: nextId(), x: ball.x, y: ball.y, vx: speed, vy: -350, level },
-    { id: nextId(), x: ball.x, y: ball.y, vx: -speed, vy: -350, level },
+    { id: nextId(), x: ball.x, y: ball.y, vx: speed, vy, level },
+    { id: nextId(), x: ball.x, y: ball.y, vx: -speed, vy, level },
   ]
 }
 
