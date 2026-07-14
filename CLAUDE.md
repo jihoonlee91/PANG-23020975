@@ -76,6 +76,15 @@ Example: `feat: add power-up drops and effects`, `docs: design phase3-4 power-up
 
 If a body is needed, leave a blank line after the subject and add the description there. End the commit message with `Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>`.
 
+- Keep commits small and feature-sized (one logical change per commit), and push to `origin master` right after each one — don't batch unrelated changes into a single commit.
+- `test`: adding or updating tests with no production code behavior change (in addition to the types above).
+
+## Pull Request Convention
+
+- **Title**: same format as a commit subject — `<type>: <description>` (English, imperative, lowercase start), summarizing the overall change. Keep it under ~70 characters.
+- **Body**: use the sections already defined in `.github/PULL_REQUEST_TEMPLATE.md` — Summary, Related docs (which `docs/design/phaseX_Y.md` or `docs/PRD.md`/`docs/PLAN.md` this builds on), and the verification checklist (`tsc`, `build`, `lint` all passing, manually tested in the browser).
+- If a PR bundles multiple commits, the Summary should describe the end result, not restate every commit message.
+
 ## Design Docs
 
 - `docs/PRD.md` — overview of the game's overall requirements
