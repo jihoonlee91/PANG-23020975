@@ -81,6 +81,22 @@ function StageMap({
             : `Stage ${selectedStage + 1} selected`}
         </p>
       )}
+      {onStartStage && (
+        <div className="stage-map-actions stage-map-start-actions">
+          <button
+            type="button"
+            className="screen-button"
+            disabled={selectedStage === null}
+            onClick={() => {
+              if (selectedStage !== null) onStartStage(selectedStage)
+            }}
+          >
+            {selectedStage === null
+              ? 'Select a Stage'
+              : `Start Stage ${selectedStage + 1}`}
+          </button>
+        </div>
+      )}
       <div className="stage-map-grid">
         {Array.from({ length: STAGE_COUNT }, (_, i) => {
           const isCurrent = i === currentStage
@@ -139,20 +155,6 @@ function StageMap({
         })}
       </div>
       <div className="stage-map-actions">
-        {onStartStage && (
-          <button
-            type="button"
-            className="screen-button"
-            disabled={selectedStage === null}
-            onClick={() => {
-              if (selectedStage !== null) onStartStage(selectedStage)
-            }}
-          >
-            {selectedStage === null
-              ? 'Select a Stage'
-              : `Start Stage ${selectedStage + 1}`}
-          </button>
-        )}
         {onAction && actionLabel && (
           <button type="button" className="screen-button" onClick={onAction}>
             {actionLabel}

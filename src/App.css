@@ -935,6 +935,23 @@
   gap: 12px;
 }
 
+.stage-map-start-actions {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  width: 100%;
+  padding: 6px 10px 10px;
+  background: linear-gradient(
+    180deg,
+    rgba(5, 14, 35, 0.98) 72%,
+    rgba(5, 14, 35, 0)
+  );
+}
+
+.stage-map-start-actions .screen-button {
+  min-width: min(280px, 100%);
+}
+
 .stage-map-transition {
   width: min(1180px, 100%);
   padding: 24px;
