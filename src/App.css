@@ -369,11 +369,55 @@
 }
 
 .canvas-column {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 10px;
   flex: 1 1 auto;
   min-width: 0;
+}
+
+.stage-start-countdown {
+  position: absolute;
+  inset: 0;
+  z-index: 4;
+  display: grid;
+  place-items: center;
+  pointer-events: none;
+}
+
+.stage-start-countdown-panel {
+  display: grid;
+  min-width: 170px;
+  padding: 16px 26px;
+  border: 2px solid rgba(254, 240, 138, 0.9);
+  border-radius: 18px;
+  color: #fff;
+  text-align: center;
+  background: rgba(5, 14, 35, 0.76);
+  box-shadow:
+    0 14px 34px rgba(2, 8, 23, 0.5),
+    0 0 26px rgba(250, 204, 21, 0.2);
+  backdrop-filter: blur(5px);
+}
+
+.stage-start-countdown-panel span,
+.stage-start-countdown-panel small {
+  color: #fef08a;
+  font-family: var(--font-game);
+  letter-spacing: 0.08em;
+}
+
+.stage-start-countdown-panel strong {
+  color: #fff;
+  font-family: var(--font-game);
+  font-size: clamp(64px, 11vw, 108px);
+  line-height: 1;
+  text-shadow: 0 7px 0 #9a3412;
+}
+
+.stage-start-countdown-panel small {
+  font-size: var(--fs-xs);
 }
 
 .canvas-column canvas {

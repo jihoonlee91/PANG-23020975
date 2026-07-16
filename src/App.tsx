@@ -112,7 +112,6 @@ function App() {
   }
 
   const continueToNextStage = useCallback(() => {
-    setStageIndex((stage) => stage + 1)
     setScreen('play')
   }, [])
 
@@ -178,8 +177,10 @@ function App() {
 
   const handleClear = (score: number) => {
     if (stageIndex + 1 < STAGE_COUNT) {
-      setHighestUnlockedStage(unlockStage(stageIndex + 1))
+      const nextStage = stageIndex + 1
+      setHighestUnlockedStage(unlockStage(nextStage))
       setFinalScore(score)
+      setStageIndex(nextStage)
       setStageAdvanceCountdown(STAGE_ADVANCE_COUNTDOWN)
       setScreen('stageClear')
     } else {
@@ -384,14 +385,14 @@ function App() {
 
   if (screen === 'stageClear') {
     return (
-      <StageMap
-        compact
-        title="Stage Clear"
-        statusText={`Total Score ${finalScore} · Stage ${stageIndex + 1} cleared · Next stage starts in ${stageAdvanceCountdown}`}
-        currentStage={stageIndex}
-        nextStage={stageIndex + 1}
-        actionLabel="Next Stage Now"
-        onAction={continueToNextStage}
+      <GamePlay
+        stageIndex={stageIndex}
+        initialScore={finalScore}
+        startCountdown={stageAdvanceCountdown}
+        onClear={handleClear}
+        onGameOver={handleGameOver}
+        onQuit={() => setScreen('main')}
+        settings={settings}
       />
     )
   }

@@ -427,6 +427,7 @@ function spawnBurst(
 type Props = {
   stageIndex: number
   initialScore?: number
+  startCountdown?: number
   onClear: (score: number) => void
   onGameOver: (score: number) => void
   demo?: boolean
@@ -462,12 +463,14 @@ const NO_BUFFS: BuffDisplay = {
 function GamePlay({
   stageIndex,
   initialScore = 0,
+  startCountdown,
   onClear,
   onGameOver,
   demo = false,
   settings,
   onQuit,
 }: Props) {
+  const isStarting = startCountdown !== undefined
   const terrain = getStageTerrain(stageIndex)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const playerXRef = useRef(CANVAS_WIDTH / 2)
@@ -615,6 +618,11 @@ function GamePlay({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isStarting) {
+        e.preventDefault()
+        inputRef.current.releaseAll()
+        return
+      }
       if (
         !demo &&
         !e.repeat &&
@@ -661,12 +669,12 @@ function GamePlay({
       window.removeEventListener('keydown', handleKeyDown)
       window.removeEventListener('keyup', handleKeyUp)
     }
-  }, [demo])
+  }, [demo, isStarting])
 
   useEffect(() => {
     const pauseForLifecycle = () => {
       inputRef.current.releaseAll()
-      if (!demo) setPaused(true)
+      if (!demo && !isStarting) setPaused(true)
     }
     const handleVisibility = () => {
       if (document.hidden) pauseForLifecycle()
@@ -679,7 +687,7 @@ function GamePlay({
       window.removeEventListener('pagehide', pauseForLifecycle)
       document.removeEventListener('visibilitychange', handleVisibility)
     }
-  }, [demo])
+  }, [demo, isStarting])
 
   useEffect(() => {
     const canvas = canvasRef.current
@@ -736,14 +744,15 @@ function GamePlay({
       const dtMs = dtSec * 1000
       lastTime = time
 
-      if (paused) {
+      if (paused || isStarting) {
         lastTime = null
         accumulator = 0
       }
 
-      const fixedStep = paused
-        ? { updates: 0, accumulator: 0 }
-        : advanceFixedStep(accumulator, frameDeltaSec)
+      const fixedStep =
+        paused || isStarting
+          ? { updates: 0, accumulator: 0 }
+          : advanceFixedStep(accumulator, frameDeltaSec)
       const updateCount = fixedStep.updates
       accumulator = fixedStep.accumulator
 
@@ -1320,6 +1329,7 @@ function GamePlay({
     onGameOver,
     demo,
     paused,
+    isStarting,
     settings.showFps,
     settings.vibration,
   ])
@@ -1358,7 +1368,7 @@ function GamePlay({
         <span className="hud-combo">Combo ×{comboRef.current}</span>
         {settings.showFps && <span className="hud-fps">{fps} FPS</span>}
         {demo && <span className="demo-badge">AI</span>}
-        {!demo && (
+        {!demo && !isStarting && (
           <button
             type="button"
             className="hud-button"
@@ -1450,7 +1460,7 @@ function GamePlay({
             aria-label="PANG game field. Move left and right, climb ladders, and fire harpoons to pop every ball."
             style={{ border: '1px solid #2e303a', touchAction: 'none' }}
             onPointerDown={(e) => {
-              if (demo || paused) return
+              if (demo || paused || isStarting) return
               e.currentTarget.setPointerCapture(e.pointerId)
               dragRef.current = {
                 startClientX: e.clientX,
@@ -1492,9 +1502,23 @@ function GamePlay({
               dragTargetXRef.current = null
             }}
           />
+          {isStarting && (
+            <div
+              className="stage-start-countdown"
+              role="status"
+              aria-live="polite"
+              aria-label={`Stage ${stageIndex + 1} starts in ${startCountdown}`}
+            >
+              <div className="stage-start-countdown-panel">
+                <span>Stage {stageIndex + 1}</span>
+                <strong>{startCountdown}</strong>
+                <small>GET READY</small>
+              </div>
+            </div>
+          )}
           {!demo && (
             <TouchControls
-              disabled={paused}
+              disabled={paused || isStarting}
               size={settings.touchButtonSize}
               opacity={settings.touchButtonOpacity}
               onChange={handleTouchChange}
