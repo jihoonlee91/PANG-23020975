@@ -4,6 +4,7 @@ import {
   CANVAS_HEIGHT,
   GRAVITY,
   MIN_BOUNCE_SPEED,
+  LEVEL_BOUNCE_SPEED,
   LEVEL_RADIUS,
   PLAYER_Y,
 } from './constants'
@@ -78,6 +79,30 @@ describe('stepBall', () => {
     }
     const next = stepBall(restingBall, 0.016)
     expect(Math.abs(next.vy)).toBeGreaterThanOrEqual(MIN_BOUNCE_SPEED)
+  })
+
+  it('keeps every balloon size visibly airborne after a low-speed floor hit', () => {
+    for (const level of [0, 1, 2]) {
+      const r = LEVEL_RADIUS[level]
+      let ball: Ball = {
+        id: level,
+        x: 100 + level * 100,
+        y: CANVAS_HEIGHT - r,
+        vx: 0,
+        vy: 1,
+        level,
+      }
+      let highestRise = 0
+
+      for (let frame = 0; frame < 120; frame += 1) {
+        ball = stepBall(ball, 1 / 60)
+        highestRise = Math.max(highestRise, CANVAS_HEIGHT - r - ball.y)
+      }
+
+      const expectedRise =
+        (LEVEL_BOUNCE_SPEED[level] * LEVEL_BOUNCE_SPEED[level]) / (2 * GRAVITY)
+      expect(highestRise).toBeGreaterThan(expectedRise * 0.85)
+    }
   })
 
   it('bounces off the left and right walls', () => {
@@ -165,6 +190,12 @@ describe('collision helpers', () => {
   it('does not hit a ball that is above the harpoon tip', () => {
     const ball: Ball = { id: 1, x: 100, y: 40, vx: 0, vy: 0, level: 2 }
     expect(harpoonHitsBall(100, 80, ball)).toBe(false)
+  })
+
+  it('supports point-only collision for Vulcan shots', () => {
+    const ball: Ball = { id: 1, x: 100, y: 300, vx: 0, vy: 0, level: 2 }
+    expect(harpoonHitsBall(100, 80, ball, 80)).toBe(false)
+    expect(harpoonHitsBall(100, 300, ball, 300)).toBe(true)
   })
 
   it('detects a ball overlapping the player', () => {

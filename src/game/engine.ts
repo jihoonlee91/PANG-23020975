@@ -8,6 +8,7 @@ import {
   GRAVITY,
   RESTITUTION,
   MIN_BOUNCE_SPEED,
+  LEVEL_BOUNCE_SPEED,
   SPLIT_VY_BASE,
   SPLIT_VY_PER_LEVEL,
   OBSTACLE_X,
@@ -38,22 +39,25 @@ export function createStage(stageIndex: number): Ball[] {
 // but never letting the bounce speed fade below MIN_BOUNCE_SPEED — otherwise
 // the geometric decay eventually shrinks bounces to an imperceptible height
 // and the ball looks like it stopped bouncing (rolls along the floor instead).
-function reflect(v: number): number {
+function reflect(v: number, minimumSpeed = MIN_BOUNCE_SPEED): number {
   const bounced = -v * RESTITUTION
   const sign = bounced < 0 ? -1 : 1
-  return Math.abs(bounced) < MIN_BOUNCE_SPEED
-    ? sign * MIN_BOUNCE_SPEED
-    : bounced
+  return Math.abs(bounced) < minimumSpeed ? sign * minimumSpeed : bounced
 }
 
-function reflectAway(v: number, towardPositive: boolean): number {
+function reflectAway(
+  v: number,
+  towardPositive: boolean,
+  minimumSpeed = MIN_BOUNCE_SPEED,
+): number {
   const bounced = Math.abs(v) * RESTITUTION * (towardPositive ? 1 : -1)
-  const minMagnitude = Math.max(Math.abs(bounced), MIN_BOUNCE_SPEED)
+  const minMagnitude = Math.max(Math.abs(bounced), minimumSpeed)
   return towardPositive ? minMagnitude : -minMagnitude
 }
 
 export function stepBall(ball: Ball, dtSec: number): Ball {
   const r = LEVEL_RADIUS[ball.level]
+  const verticalBounceSpeed = LEVEL_BOUNCE_SPEED[ball.level]
   let { x, y, vx, vy } = ball
 
   vy += GRAVITY * dtSec
@@ -70,10 +74,10 @@ export function stepBall(ball: Ball, dtSec: number): Ball {
 
   if (y - r < 0) {
     y = r
-    vy = reflect(vy)
+    vy = reflect(vy, verticalBounceSpeed)
   } else if (y + r > CANVAS_HEIGHT) {
     y = CANVAS_HEIGHT - r
-    vy = reflect(vy)
+    vy = reflect(vy, verticalBounceSpeed)
   }
 
   if (
@@ -86,10 +90,10 @@ export function stepBall(ball: Ball, dtSec: number): Ball {
     const fromBottom = y > OBSTACLE_Y + OBSTACLE_HEIGHT
     if (fromTop) {
       y = OBSTACLE_Y - r
-      vy = reflectAway(vy, false)
+      vy = reflectAway(vy, false, verticalBounceSpeed)
     } else if (fromBottom) {
       y = OBSTACLE_Y + OBSTACLE_HEIGHT + r
-      vy = reflectAway(vy, true)
+      vy = reflectAway(vy, true, verticalBounceSpeed)
     } else if (x < OBSTACLE_X) {
       x = OBSTACLE_X - r
       vx = reflectAway(vx, false)

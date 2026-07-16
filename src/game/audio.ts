@@ -14,7 +14,7 @@ export function configureAudio(settings: GameSettings) {
 
 export function unlockAudio() {
   const context = getContext()
-  void context?.resume()
+  void context?.resume().catch(() => undefined)
 }
 
 function getContext(): AudioContext | null {
@@ -28,7 +28,7 @@ function getContext(): AudioContext | null {
     audioCtx = new AudioCtor()
   }
   if (audioCtx.state === 'suspended') {
-    audioCtx.resume()
+    void audioCtx.resume().catch(() => undefined)
   }
   return audioCtx
 }

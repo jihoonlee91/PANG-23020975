@@ -7,12 +7,15 @@ import {
   PLAYER_Y,
   PLAYER_SPEED,
   HARPOON_SPEED,
+  VULCAN_SPEED,
   MAX_HP,
   INVULN_MS,
   LEVEL_RADIUS,
   SCORE_BY_LEVEL,
   COMBO_WINDOW_MS,
   STAGE_COUNT,
+  STAGE_TIME_SECONDS,
+  TIME_BONUS_PER_SECOND,
   OBSTACLE_X,
   OBSTACLE_Y,
   OBSTACLE_WIDTH,
@@ -20,7 +23,12 @@ import {
   ITEM_RADIUS,
   MAX_HARPOONS_DEFAULT,
   MAX_HARPOONS_DOUBLE_WIRE,
+  MAX_VULCAN_SHOTS,
   DOUBLE_WIRE_DURATION_MS,
+  POWER_WIRE_DURATION_MS,
+  POWER_WIRE_STAY_MS,
+  VULCAN_DURATION_MS,
+  VULCAN_FIRE_INTERVAL_MS,
   CLOCK_DURATION_MS,
   HOURGLASS_DURATION_MS,
   HOURGLASS_SLOW_FACTOR,
@@ -72,6 +80,8 @@ const HINTS = [
 
 const ITEM_LABELS: Record<ItemType, string> = {
   doubleWire: 'D',
+  powerWire: 'P',
+  vulcan: 'V',
   clock: 'C',
   hourglass: 'H',
   barrier: 'B',
@@ -81,6 +91,8 @@ const ITEM_LABELS: Record<ItemType, string> = {
 
 const ITEM_COLORS: Record<ItemType, string> = {
   doubleWire: '#38bdf8',
+  powerWire: '#22c55e',
+  vulcan: '#f97316',
   clock: '#a5b4fc',
   hourglass: '#fbbf24',
   barrier: '#34d399',
@@ -88,19 +100,48 @@ const ITEM_COLORS: Record<ItemType, string> = {
   dynamite: '#f87171',
 }
 
-const BUFF_LABELS: Record<'doubleWire' | 'clock' | 'hourglass', string> = {
+const BUFF_LABELS: Record<
+  'doubleWire' | 'powerWire' | 'vulcan' | 'clock' | 'hourglass',
+  string
+> = {
   doubleWire: 'Double Wire',
+  powerWire: 'Power Harpoon',
+  vulcan: 'Vulcan',
   clock: 'Clock (Stop)',
   hourglass: 'Hourglass (Slow)',
 }
 
 const ITEM_ANNOUNCEMENTS: Record<ItemType, string> = {
   doubleWire: 'Double Wire!',
+  powerWire: 'Power Harpoon!',
+  vulcan: 'Vulcan!',
   clock: 'Time Stop!',
   hourglass: 'Slow Motion!',
   barrier: 'Barrier!',
   oneUp: '+1 HP!',
   dynamite: 'Dynamite!',
+}
+
+const ITEM_TITLES: Record<ItemType, string> = {
+  doubleWire: 'Double Wire',
+  powerWire: 'Power Harpoon',
+  vulcan: 'Vulcan',
+  clock: 'Time Stop',
+  hourglass: 'Slow Motion',
+  barrier: 'Barrier',
+  oneUp: '1UP',
+  dynamite: 'Dynamite',
+}
+
+const ITEM_DESCRIPTIONS: Record<ItemType, string> = {
+  doubleWire: '12초 동안 작살을 2개까지 동시에 발사합니다.',
+  powerWire: '12초 동안 천장까지 닿아 5초간 남는 강화 작살을 발사합니다.',
+  vulcan: '12초 동안 빠른 탄환을 연속 발사합니다.',
+  clock: '6초 동안 모든 공의 움직임을 멈춥니다.',
+  hourglass: '8초 동안 모든 공을 느리게 만듭니다.',
+  barrier: '공과 충돌했을 때 피해를 한 번 막아줍니다.',
+  oneUp: 'HP를 1 회복합니다.',
+  dynamite: '모든 공을 즉시 가장 작은 크기로 분열시킵니다.',
 }
 
 type Particle = {
@@ -164,6 +205,81 @@ function drawObstacle(ctx: CanvasRenderingContext2D) {
   ctx.strokeStyle = '#27272a'
   ctx.lineWidth = 2
   ctx.strokeRect(OBSTACLE_X, OBSTACLE_Y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT)
+}
+
+function drawHarpoon(ctx: CanvasRenderingContext2D, harpoon: Harpoon) {
+  if (harpoon.kind === 'vulcan') {
+    ctx.save()
+    ctx.shadowColor = '#fb923c'
+    ctx.shadowBlur = 8
+    ctx.strokeStyle = '#7c2d12'
+    ctx.lineWidth = 3
+    ctx.beginPath()
+    ctx.moveTo(harpoon.x, harpoon.y + 12)
+    ctx.lineTo(harpoon.x, harpoon.y)
+    ctx.stroke()
+    ctx.fillStyle = '#f8fafc'
+    ctx.beginPath()
+    ctx.arc(harpoon.x, harpoon.y, 3.5, 0, Math.PI * 2)
+    ctx.fill()
+    ctx.restore()
+    return
+  }
+
+  const ropeTop = Math.min(PLAYER_Y, harpoon.y + 16)
+  const isPowerWire = harpoon.kind === 'powerWire'
+
+  ctx.save()
+  ctx.lineCap = 'round'
+  ctx.shadowColor = '#00000055'
+  ctx.shadowBlur = 3
+
+  // Dark outline keeps the rope readable against every stage background.
+  ctx.strokeStyle = isPowerWire ? '#14532d' : '#3f2d20'
+  ctx.lineWidth = 5
+  ctx.beginPath()
+  ctx.moveTo(harpoon.x, PLAYER_Y)
+  ctx.lineTo(harpoon.x, ropeTop)
+  ctx.stroke()
+
+  // Two offset dashed strands give the vertical line a twisted-rope texture.
+  ctx.shadowBlur = 0
+  ctx.lineWidth = 2
+  ctx.setLineDash([5, 4])
+  ctx.strokeStyle = isPowerWire ? '#bbf7d0' : '#e7c58d'
+  ctx.beginPath()
+  ctx.moveTo(harpoon.x - 1, PLAYER_Y)
+  ctx.lineTo(harpoon.x - 1, ropeTop)
+  ctx.stroke()
+  ctx.lineDashOffset = 4.5
+  ctx.strokeStyle = isPowerWire ? '#22c55e' : '#9a6a3a'
+  ctx.beginPath()
+  ctx.moveTo(harpoon.x + 1, PLAYER_Y)
+  ctx.lineTo(harpoon.x + 1, ropeTop)
+  ctx.stroke()
+  ctx.setLineDash([])
+
+  // A broad metal point with side barbs reads as a harpoon, not a plain wire.
+  const metal = ctx.createLinearGradient(harpoon.x - 8, 0, harpoon.x + 8, 0)
+  metal.addColorStop(0, isPowerWire ? '#15803d' : '#64748b')
+  metal.addColorStop(0.48, '#f8fafc')
+  metal.addColorStop(1, isPowerWire ? '#166534' : '#475569')
+  ctx.fillStyle = metal
+  ctx.strokeStyle = '#1e293b'
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  ctx.moveTo(harpoon.x, harpoon.y)
+  ctx.lineTo(harpoon.x - 8, harpoon.y + 11)
+  ctx.lineTo(harpoon.x - 3, harpoon.y + 9)
+  ctx.lineTo(harpoon.x - 3, harpoon.y + 16)
+  ctx.lineTo(harpoon.x + 3, harpoon.y + 16)
+  ctx.lineTo(harpoon.x + 3, harpoon.y + 9)
+  ctx.lineTo(harpoon.x + 8, harpoon.y + 11)
+  ctx.closePath()
+  ctx.fill()
+  ctx.stroke()
+
+  ctx.restore()
 }
 
 function drawBall(ctx: CanvasRenderingContext2D, ball: Ball) {
@@ -238,6 +354,7 @@ function spawnBurst(
 
 type Props = {
   stageIndex: number
+  initialScore?: number
   onClear: (score: number) => void
   onGameOver: (score: number) => void
   demo?: boolean
@@ -250,6 +367,8 @@ const AI_FIRE_TOLERANCE = 18
 
 type BuffDisplay = {
   doubleWire: number
+  powerWire: number
+  vulcan: number
   clock: number
   hourglass: number
   barrier: number
@@ -257,6 +376,8 @@ type BuffDisplay = {
 
 const NO_BUFFS: BuffDisplay = {
   doubleWire: 0,
+  powerWire: 0,
+  vulcan: 0,
   clock: 0,
   hourglass: 0,
   barrier: 0,
@@ -264,6 +385,7 @@ const NO_BUFFS: BuffDisplay = {
 
 function GamePlay({
   stageIndex,
+  initialScore = 0,
   onClear,
   onGameOver,
   demo = false,
@@ -279,7 +401,7 @@ function GamePlay({
   const invulnUntilRef = useRef(0)
   const comboRef = useRef(0)
   const lastHitAtRef = useRef(0)
-  const scoreRef = useRef(0)
+  const scoreRef = useRef(initialScore)
   const nextIdRef = useRef(1000 * (stageIndex + 1))
   const nextItemIdRef = useRef(1)
   const inputRef = useRef(new InputController())
@@ -293,11 +415,17 @@ function GamePlay({
   const stageStartScoreRef = useRef(0)
   const dprRef = useRef(1)
   const pausedAtRef = useRef<number | null>(null)
+  const timeRemainingRef = useRef(STAGE_TIME_SECONDS)
+  const lastDisplayedTimeRef = useRef(STAGE_TIME_SECONDS)
+  const lastFireAtRef = useRef(0)
+  const itemNoticeTimerRef = useRef<number | null>(null)
   const endedRef = useRef(false)
   const particlesRef = useRef<Particle[]>([])
   const popupsRef = useRef<Popup[]>([])
 
   const doubleWireUntilRef = useRef(0)
+  const powerWireUntilRef = useRef(0)
+  const vulcanUntilRef = useRef(0)
   const clockUntilRef = useRef(0)
   const hourglassUntilRef = useRef(0)
   const barrierCountRef = useRef(0)
@@ -305,7 +433,9 @@ function GamePlay({
   const aiKeysDisplayRef = useRef({ left: false, right: false, fire: false })
 
   const [hp, setHp] = useState(MAX_HP)
-  const [score, setScore] = useState(0)
+  const [score, setScore] = useState(initialScore)
+  const [timeRemaining, setTimeRemaining] = useState(STAGE_TIME_SECONDS)
+  const [itemNotice, setItemNotice] = useState<ItemType | null>(null)
   const [paused, setPaused] = useState(false)
   const [fps, setFps] = useState(60)
   const [buffs, setBuffs] = useState<BuffDisplay>(NO_BUFFS)
@@ -328,6 +458,8 @@ function GamePlay({
       particlesRef.current = []
       popupsRef.current = []
       doubleWireUntilRef.current = 0
+      powerWireUntilRef.current = 0
+      vulcanUntilRef.current = 0
       clockUntilRef.current = 0
       hourglassUntilRef.current = 0
       barrierCountRef.current = 0
@@ -336,9 +468,18 @@ function GamePlay({
       dragRef.current = null
       dragTargetXRef.current = null
       fireRequestedRef.current = false
+      timeRemainingRef.current = STAGE_TIME_SECONDS
+      lastDisplayedTimeRef.current = STAGE_TIME_SECONDS
+      lastFireAtRef.current = 0
+      if (itemNoticeTimerRef.current !== null) {
+        window.clearTimeout(itemNoticeTimerRef.current)
+        itemNoticeTimerRef.current = null
+      }
       buffsDisplayRef.current = NO_BUFFS
       setHp(MAX_HP)
       setBuffs(NO_BUFFS)
+      setTimeRemaining(STAGE_TIME_SECONDS)
+      setItemNotice(null)
       if (restoreScore) {
         scoreRef.current = stageStartScoreRef.current
         setScore(stageStartScoreRef.current)
@@ -354,6 +495,15 @@ function GamePlay({
     setPaused(false)
   }, [resetStageState])
 
+  useEffect(
+    () => () => {
+      if (itemNoticeTimerRef.current !== null) {
+        window.clearTimeout(itemNoticeTimerRef.current)
+      }
+    },
+    [],
+  )
+
   useEffect(() => {
     if (paused) {
       pausedAtRef.current = performance.now()
@@ -363,9 +513,18 @@ function GamePlay({
     const pausedFor = performance.now() - pausedAtRef.current
     invulnUntilRef.current += pausedFor
     doubleWireUntilRef.current += pausedFor
+    powerWireUntilRef.current += pausedFor
+    vulcanUntilRef.current += pausedFor
     clockUntilRef.current += pausedFor
     hourglassUntilRef.current += pausedFor
     lastHitAtRef.current += pausedFor
+    harpoonsRef.current = harpoonsRef.current.map((harpoon) => ({
+      ...harpoon,
+      expiresAt:
+        harpoon.expiresAt === undefined
+          ? undefined
+          : harpoon.expiresAt + pausedFor,
+    }))
     pausedAtRef.current = null
   }, [paused])
 
@@ -496,10 +655,32 @@ function GamePlay({
           const isClockActive = time < clockUntilRef.current
           const isHourglassActive =
             !isClockActive && time < hourglassUntilRef.current
-          const maxHarpoons =
-            time < doubleWireUntilRef.current
+          const isPowerWireActive = time < powerWireUntilRef.current
+          const isVulcanActive = time < vulcanUntilRef.current
+          const maxHarpoons = isVulcanActive
+            ? MAX_VULCAN_SHOTS
+            : time < doubleWireUntilRef.current
               ? MAX_HARPOONS_DOUBLE_WIRE
               : MAX_HARPOONS_DEFAULT
+
+          if (!demo) {
+            timeRemainingRef.current = Math.max(
+              0,
+              timeRemainingRef.current - dtSec,
+            )
+            const displayedTime = Math.ceil(timeRemainingRef.current)
+            if (displayedTime !== lastDisplayedTimeRef.current) {
+              lastDisplayedTimeRef.current = displayedTime
+              setTimeRemaining(displayedTime)
+            }
+            if (timeRemainingRef.current <= 0) {
+              endedRef.current = true
+              playGameOverSound()
+              stopBgm()
+              onGameOver(scoreRef.current)
+              continue
+            }
+          }
 
           if (demo) {
             // Forward-simulate every ball with the real physics to find whose
@@ -569,22 +750,48 @@ function GamePlay({
                 : playerXRef.current + Math.sign(diff) * maxStep
           }
 
+          const wantsToFire =
+            keys.fire ||
+            inputRef.current.consumeFire() ||
+            fireRequestedRef.current
+          const fireCooldownReady =
+            !isVulcanActive ||
+            time - lastFireAtRef.current >= VULCAN_FIRE_INTERVAL_MS
           if (
-            (keys.fire ||
-              inputRef.current.consumeFire() ||
-              fireRequestedRef.current) &&
+            wantsToFire &&
+            fireCooldownReady &&
             harpoonsRef.current.length < maxHarpoons
           ) {
-            harpoonsRef.current = [
-              ...harpoonsRef.current,
-              { x: playerXRef.current, y: PLAYER_Y },
-            ]
+            const newHarpoon: Harpoon = isPowerWireActive
+              ? {
+                  x: playerXRef.current,
+                  y: 0,
+                  kind: 'powerWire',
+                  expiresAt: time + POWER_WIRE_STAY_MS,
+                }
+              : {
+                  x: playerXRef.current,
+                  y: PLAYER_Y,
+                  kind: isVulcanActive ? 'vulcan' : 'normal',
+                }
+            harpoonsRef.current = [...harpoonsRef.current, newHarpoon]
+            lastFireAtRef.current = time
           }
           fireRequestedRef.current = false
 
           harpoonsRef.current = harpoonsRef.current
-            .map((h) => ({ x: h.x, y: h.y - HARPOON_SPEED * dtSec }))
-            .filter((h) => h.y > 0 && !harpoonHitsObstacle(h.x, h.y))
+            .map((harpoon) => {
+              if (harpoon.kind === 'powerWire') return harpoon
+              const speed =
+                harpoon.kind === 'vulcan' ? VULCAN_SPEED : HARPOON_SPEED
+              return { ...harpoon, y: harpoon.y - speed * dtSec }
+            })
+            .filter((harpoon) => {
+              if (harpoon.kind === 'powerWire') {
+                return (harpoon.expiresAt ?? 0) > time
+              }
+              return harpoon.y > 0 && !harpoonHitsObstacle(harpoon.x, harpoon.y)
+            })
 
           if (!isClockActive) {
             const ballDt = isHourglassActive
@@ -597,7 +804,12 @@ function GamePlay({
             const remainingHarpoons: Harpoon[] = []
             for (const h of harpoonsRef.current) {
               const hitIndex = ballsRef.current.findIndex((b) =>
-                harpoonHitsBall(h.x, h.y, b),
+                harpoonHitsBall(
+                  h.x,
+                  h.y,
+                  b,
+                  h.kind === 'vulcan' ? h.y : PLAYER_Y,
+                ),
               )
               if (hitIndex === -1) {
                 remainingHarpoons.push(h)
@@ -696,6 +908,14 @@ function GamePlay({
               ...itemsRef.current.slice(pickupIndex + 1),
             ]
             playItemSound()
+            setItemNotice(picked.type)
+            if (itemNoticeTimerRef.current !== null) {
+              window.clearTimeout(itemNoticeTimerRef.current)
+            }
+            itemNoticeTimerRef.current = window.setTimeout(() => {
+              setItemNotice(null)
+              itemNoticeTimerRef.current = null
+            }, 2200)
             popupsRef.current.push({
               x: picked.x,
               y: picked.y - 16,
@@ -708,6 +928,20 @@ function GamePlay({
             switch (picked.type) {
               case 'doubleWire':
                 doubleWireUntilRef.current = time + DOUBLE_WIRE_DURATION_MS
+                powerWireUntilRef.current = 0
+                vulcanUntilRef.current = 0
+                break
+              case 'powerWire':
+                powerWireUntilRef.current = time + POWER_WIRE_DURATION_MS
+                doubleWireUntilRef.current = 0
+                vulcanUntilRef.current = 0
+                harpoonsRef.current = []
+                break
+              case 'vulcan':
+                vulcanUntilRef.current = time + VULCAN_DURATION_MS
+                doubleWireUntilRef.current = 0
+                powerWireUntilRef.current = 0
+                harpoonsRef.current = []
                 break
               case 'clock':
                 clockUntilRef.current = time + CLOCK_DURATION_MS
@@ -748,16 +982,28 @@ function GamePlay({
             0,
             Math.ceil((hourglassUntilRef.current - time) / 1000),
           )
+          const powerWireSec = Math.max(
+            0,
+            Math.ceil((powerWireUntilRef.current - time) / 1000),
+          )
+          const vulcanSec = Math.max(
+            0,
+            Math.ceil((vulcanUntilRef.current - time) / 1000),
+          )
           const barrierCount = barrierCountRef.current
           const prevBuffs = buffsDisplayRef.current
           if (
             prevBuffs.doubleWire !== doubleWireSec ||
+            prevBuffs.powerWire !== powerWireSec ||
+            prevBuffs.vulcan !== vulcanSec ||
             prevBuffs.clock !== clockSec ||
             prevBuffs.hourglass !== hourglassSec ||
             prevBuffs.barrier !== barrierCount
           ) {
             const nextBuffs: BuffDisplay = {
               doubleWire: doubleWireSec,
+              powerWire: powerWireSec,
+              vulcan: vulcanSec,
               clock: clockSec,
               hourglass: hourglassSec,
               barrier: barrierCount,
@@ -768,6 +1014,18 @@ function GamePlay({
 
           if (!endedRef.current && ballsRef.current.length === 0) {
             endedRef.current = true
+            const timeBonus =
+              Math.ceil(timeRemainingRef.current) * TIME_BONUS_PER_SECOND
+            scoreRef.current += timeBonus
+            setScore(scoreRef.current)
+            popupsRef.current.push({
+              x: CANVAS_WIDTH / 2,
+              y: CANVAS_HEIGHT / 2,
+              text: `TIME BONUS +${timeBonus}`,
+              life: 1200,
+              maxLife: 1200,
+              color: '#f59e0b',
+            })
             playClearSound()
             if (settings.vibration) navigator.vibrate?.([40, 30, 100])
             onClear(scoreRef.current)
@@ -795,16 +1053,7 @@ function GamePlay({
       drawObstacle(ctx)
 
       for (const h of harpoonsRef.current) {
-        ctx.save()
-        ctx.shadowColor = '#ffffff'
-        ctx.shadowBlur = 8
-        ctx.strokeStyle = '#374151'
-        ctx.lineWidth = 3
-        ctx.beginPath()
-        ctx.moveTo(h.x, PLAYER_Y)
-        ctx.lineTo(h.x, h.y)
-        ctx.stroke()
-        ctx.restore()
+        drawHarpoon(ctx, h)
       }
 
       for (const b of ballsRef.current) {
@@ -924,6 +1173,12 @@ function GamePlay({
             {hp}/{MAX_HP}
           </span>
         </div>
+        <span
+          className={`hud-time ${timeRemaining <= 10 ? 'hud-time-danger' : ''}`}
+          aria-label={`${timeRemaining} seconds remaining`}
+        >
+          Time {timeRemaining}
+        </span>
         <span className="hud-score">Score {score}</span>
         <span className="hud-combo">Combo ×{comboRef.current}</span>
         {settings.showFps && <span className="hud-fps">{fps} FPS</span>}
@@ -942,6 +1197,26 @@ function GamePlay({
           </button>
         )}
       </div>
+      {itemNotice && (
+        <div
+          className="item-notice"
+          role="status"
+          aria-live="polite"
+          aria-atomic="true"
+        >
+          <span
+            className="item-notice-icon"
+            style={{ backgroundColor: ITEM_COLORS[itemNotice] }}
+            aria-hidden="true"
+          >
+            {ITEM_LABELS[itemNotice]}
+          </span>
+          <span className="item-notice-copy">
+            <strong>{ITEM_TITLES[itemNotice]} 획득!</strong>
+            <span>{ITEM_DESCRIPTIONS[itemNotice]}</span>
+          </span>
+        </div>
+      )}
       {demo && (
         <div className="ai-key-row">
           <span className={`ai-key ${aiKeys.left ? 'ai-key-active' : ''}`}>
@@ -1042,7 +1317,15 @@ function GamePlay({
           <div>
             <h3>Buffs</h3>
             <ul className="hint-list buff-list">
-              {(['doubleWire', 'clock', 'hourglass'] as const)
+              {(
+                [
+                  'doubleWire',
+                  'powerWire',
+                  'vulcan',
+                  'clock',
+                  'hourglass',
+                ] as const
+              )
                 .filter((key) => buffs[key] > 0)
                 .map((key) => (
                   <li key={key}>
@@ -1051,6 +1334,8 @@ function GamePlay({
                 ))}
               {buffs.barrier > 0 && <li>Barrier x{buffs.barrier}</li>}
               {buffs.doubleWire === 0 &&
+                buffs.powerWire === 0 &&
+                buffs.vulcan === 0 &&
                 buffs.clock === 0 &&
                 buffs.hourglass === 0 &&
                 buffs.barrier === 0 && <li>None</li>}

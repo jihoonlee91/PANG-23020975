@@ -10,10 +10,19 @@ export type Ball = {
 export type Harpoon = {
   x: number
   y: number
+  kind?: 'normal' | 'powerWire' | 'vulcan'
+  expiresAt?: number
 }
 
 export type ItemType =
-  'doubleWire' | 'clock' | 'hourglass' | 'barrier' | 'oneUp' | 'dynamite'
+  | 'doubleWire'
+  | 'powerWire'
+  | 'vulcan'
+  | 'clock'
+  | 'hourglass'
+  | 'barrier'
+  | 'oneUp'
+  | 'dynamite'
 
 export type Item = {
   id: number

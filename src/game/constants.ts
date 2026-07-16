@@ -9,10 +9,14 @@ export const PLAYER_Y = CANVAS_HEIGHT - 30
 export const PLAYER_SPEED = 300
 
 export const HARPOON_SPEED = 700
+export const VULCAN_SPEED = 1050
 
 export const GRAVITY = 900
 export const RESTITUTION = 0.995
 export const MIN_BOUNCE_SPEED = 220
+// Vertical bounce must remain visibly larger than each balloon's diameter.
+// A single global minimum made late-stage large balloons settle into tiny hops.
+export const LEVEL_BOUNCE_SPEED = [320, 390, 460]
 export const SPLIT_VY_BASE = 250
 export const SPLIT_VY_PER_LEVEL = 150
 
@@ -25,6 +29,8 @@ export const SCORE_BY_LEVEL = [300, 150, 100]
 export const COMBO_WINDOW_MS = 1500
 
 export const STAGE_COUNT = 10
+export const STAGE_TIME_SECONDS = 90
+export const TIME_BONUS_PER_SECOND = 10
 
 export const OBSTACLE_WIDTH = 160
 export const OBSTACLE_HEIGHT = 18
@@ -38,18 +44,25 @@ export const ITEM_DROP_CHANCE = 0.14
 // Relative weights within a drop: double wire/clock/hourglass/barrier are common,
 // 1UP and dynamite are intentionally rare (dynamite is a risk item, 1UP is a reward item).
 export const ITEM_WEIGHTS: [ItemType, number][] = [
-  ['doubleWire', 22],
-  ['clock', 20],
-  ['hourglass', 20],
-  ['barrier', 20],
-  ['oneUp', 9],
-  ['dynamite', 9],
+  ['doubleWire', 18],
+  ['powerWire', 12],
+  ['vulcan', 12],
+  ['clock', 16],
+  ['hourglass', 16],
+  ['barrier', 14],
+  ['oneUp', 6],
+  ['dynamite', 6],
 ]
 
 export const MAX_HARPOONS_DEFAULT = 1
 export const MAX_HARPOONS_DOUBLE_WIRE = 2
+export const MAX_VULCAN_SHOTS = 5
 
 export const DOUBLE_WIRE_DURATION_MS = 12000
+export const POWER_WIRE_DURATION_MS = 12000
+export const POWER_WIRE_STAY_MS = 5000
+export const VULCAN_DURATION_MS = 12000
+export const VULCAN_FIRE_INTERVAL_MS = 120
 export const CLOCK_DURATION_MS = 6000
 export const HOURGLASS_DURATION_MS = 8000
 export const HOURGLASS_SLOW_FACTOR = 0.4

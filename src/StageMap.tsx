@@ -28,26 +28,80 @@ function StageThumbnail({ stageIndex }: ThumbnailProps) {
 }
 
 type Props = {
-  onBack: () => void
+  onBack?: () => void
+  currentStage?: number
+  nextStage?: number
+  title?: string
+  statusText?: string
+  actionLabel?: string
+  onAction?: () => void
+  compact?: boolean
 }
 
-function StageMap({ onBack }: Props) {
+function StageMap({
+  onBack,
+  currentStage,
+  nextStage,
+  title = 'Stage Map',
+  statusText,
+  actionLabel,
+  onAction,
+  compact = false,
+}: Props) {
   return (
-    <div className="screen stage-map-screen">
-      <h1>Stage Map</h1>
+    <div
+      className={`screen stage-map-screen ${compact ? 'stage-map-transition' : ''}`}
+    >
+      <h1>{title}</h1>
+      {statusText && <p className="stage-map-status">{statusText}</p>}
       <div className="stage-map-grid">
-        {Array.from({ length: STAGE_COUNT }, (_, i) => (
-          <div className="stage-map-card" key={i}>
-            <StageThumbnail stageIndex={i} />
-            <p>
-              {i + 1}. {STAGE_NAMES[i % STAGE_NAMES.length]}
-            </p>
-          </div>
-        ))}
+        {Array.from({ length: STAGE_COUNT }, (_, i) => {
+          const isCurrent = i === currentStage
+          const isNext = i === nextStage
+          const isCleared = currentStage !== undefined && i < currentStage
+          return (
+            <div
+              className={`stage-map-card ${isCleared ? 'stage-map-card-cleared' : ''} ${isCurrent ? 'stage-map-card-current' : ''} ${isNext ? 'stage-map-card-next' : ''}`}
+              key={i}
+              aria-current={isCurrent ? 'step' : undefined}
+            >
+              <div className="stage-thumb-wrap">
+                <StageThumbnail stageIndex={i} />
+                {isCleared && <span className="stage-map-badge">CLEAR</span>}
+                {isCurrent && (
+                  <span className="stage-map-badge stage-map-badge-current">
+                    YOU ARE HERE
+                  </span>
+                )}
+                {isNext && (
+                  <span className="stage-map-badge stage-map-badge-next">
+                    NEXT
+                  </span>
+                )}
+              </div>
+              <p>
+                {i + 1}. {STAGE_NAMES[i % STAGE_NAMES.length]}
+              </p>
+            </div>
+          )
+        })}
       </div>
-      <button type="button" className="screen-button" onClick={onBack}>
-        Back
-      </button>
+      <div className="stage-map-actions">
+        {onAction && actionLabel && (
+          <button type="button" className="screen-button" onClick={onAction}>
+            {actionLabel}
+          </button>
+        )}
+        {onBack && (
+          <button
+            type="button"
+            className="screen-button screen-button-secondary"
+            onClick={onBack}
+          >
+            Back
+          </button>
+        )}
+      </div>
     </div>
   )
 }
