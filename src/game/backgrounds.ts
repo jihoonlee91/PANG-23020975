@@ -34,6 +34,16 @@ export const STAGE_NAMES = [
   'Machu Picchu (Peru)',
   'Grand Canyon (USA)',
   'Aurora Village (Canada)',
+  'Neon Megacity (Dimension X)',
+  'Orbital Dock (Dimension X)',
+  'Crystal Moon (Dimension X)',
+  'Cyber Desert (Dimension X)',
+  'Quantum Reactor (Dimension X)',
+  'Void Cathedral (Dimension X)',
+  'Plasma Ocean (Dimension X)',
+  'Clockwork Nebula (Dimension X)',
+  'Singularity Gate (Dimension X)',
+  'Pang Core (Dimension X)',
 ]
 
 function drawSky(ctx: CanvasRenderingContext2D, top: string, bottom: string) {
@@ -543,7 +553,108 @@ const ILLUSTRATED_BACKGROUNDS = LATE_STAGE_IMAGE_URLS.map((src, index) =>
   createIllustratedBackground(src, NIGHT_BACKGROUNDS[index]),
 )
 
-const RAW_BACKGROUNDS = [...BASE_BACKGROUNDS, ...ILLUSTRATED_BACKGROUNDS]
+const DIMENSION_COLORS = [
+  ['#07051f', '#172554', '#22d3ee'],
+  ['#09051d', '#3b0764', '#f472b6'],
+  ['#020617', '#164e63', '#67e8f9'],
+  ['#160827', '#7c2d12', '#fb923c'],
+  ['#08051f', '#312e81', '#a78bfa'],
+] as const
+
+function drawDimensionBackground(
+  ctx: CanvasRenderingContext2D,
+  dimensionIndex: number,
+) {
+  const [top, bottom, neon] =
+    DIMENSION_COLORS[dimensionIndex % DIMENSION_COLORS.length]
+  drawSky(ctx, top, bottom)
+
+  ctx.save()
+  for (let star = 0; star < 44; star += 1) {
+    const x = (star * 173 + dimensionIndex * 97) % CANVAS_WIDTH
+    const y = 18 + ((star * 61 + dimensionIndex * 43) % 300)
+    ctx.globalAlpha = 0.25 + (star % 5) * 0.13
+    ctx.fillStyle = star % 3 === 0 ? neon : '#f8fafc'
+    ctx.fillRect(x, y, star % 7 === 0 ? 3 : 2, star % 7 === 0 ? 3 : 2)
+  }
+
+  const orbX = 150 + ((dimensionIndex * 137) % 660)
+  const orbY = 86 + (dimensionIndex % 3) * 34
+  const orb = ctx.createRadialGradient(orbX - 12, orbY - 12, 4, orbX, orbY, 58)
+  orb.addColorStop(0, '#ffffff')
+  orb.addColorStop(0.18, neon)
+  orb.addColorStop(1, '#111827')
+  ctx.fillStyle = orb
+  ctx.beginPath()
+  ctx.arc(orbX, orbY, 58, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.strokeStyle = neon
+  ctx.lineWidth = 4
+  ctx.beginPath()
+  ctx.ellipse(orbX, orbY, 88, 20, -0.18, 0, Math.PI * 2)
+  ctx.stroke()
+
+  ctx.globalAlpha = 0.74
+  ctx.fillStyle = '#070718'
+  const variant = dimensionIndex % 5
+  for (let shape = 0; shape < 9; shape += 1) {
+    const x = shape * 118 - 18
+    const height = 60 + ((shape * 47 + dimensionIndex * 29) % 170)
+    if (variant === 2) {
+      ctx.beginPath()
+      ctx.moveTo(x, GROUND_Y)
+      ctx.lineTo(x + 50, GROUND_Y - height)
+      ctx.lineTo(x + 100, GROUND_Y)
+      ctx.closePath()
+      ctx.fill()
+    } else {
+      ctx.fillRect(x, GROUND_Y - height, 86, height)
+      ctx.fillStyle = neon
+      ctx.globalAlpha = 0.25
+      for (
+        let windowY = GROUND_Y - height + 18;
+        windowY < GROUND_Y;
+        windowY += 24
+      ) {
+        ctx.fillRect(x + 13, windowY, 8, 5)
+        ctx.fillRect(x + 53, windowY, 8, 5)
+      }
+      ctx.fillStyle = '#070718'
+      ctx.globalAlpha = 0.74
+    }
+  }
+  ctx.restore()
+
+  drawGround(ctx, '#11142f', '#050611')
+  ctx.save()
+  ctx.strokeStyle = `${neon}66`
+  ctx.lineWidth = 1
+  for (let x = -CANVAS_WIDTH; x <= CANVAS_WIDTH * 2; x += 80) {
+    ctx.beginPath()
+    ctx.moveTo(CANVAS_WIDTH / 2, GROUND_Y)
+    ctx.lineTo(x, CANVAS_HEIGHT)
+    ctx.stroke()
+  }
+  for (let y = GROUND_Y + 12; y < CANVAS_HEIGHT; y += 16) {
+    ctx.beginPath()
+    ctx.moveTo(0, y)
+    ctx.lineTo(CANVAS_WIDTH, y)
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
+const DIMENSION_BACKGROUNDS = Array.from(
+  { length: 10 },
+  (_, index) => (ctx: CanvasRenderingContext2D) =>
+    drawDimensionBackground(ctx, index),
+)
+
+const RAW_BACKGROUNDS = [
+  ...BASE_BACKGROUNDS,
+  ...ILLUSTRATED_BACKGROUNDS,
+  ...DIMENSION_BACKGROUNDS,
+]
 
 export const BACKGROUNDS = RAW_BACKGROUNDS.map(
   (draw) => (ctx: CanvasRenderingContext2D) => {

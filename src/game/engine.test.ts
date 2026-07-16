@@ -7,6 +7,7 @@ import {
   LEVEL_BOUNCE_SPEED,
   LEVEL_RADIUS,
   PLAYER_Y,
+  STAGE_COUNT,
   STAGE_OBSTACLES,
   getStageObstacle,
   getStageTimeSeconds,
@@ -74,7 +75,7 @@ describe('createStage', () => {
       )
     }
 
-    for (let stage = 1; stage < 20; stage += 1) {
+    for (let stage = 1; stage < STAGE_COUNT; stage += 1) {
       expect(workload(stage)).toBeGreaterThanOrEqual(workload(stage - 1))
       expect(averageSpeed(stage)).toBeGreaterThan(averageSpeed(stage - 1))
       expect(getStageTimeSeconds(stage)).toBeLessThan(

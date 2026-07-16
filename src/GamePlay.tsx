@@ -1,6 +1,7 @@
 import {
   useCallback,
   useEffect,
+  useMemo,
   useRef,
   useState,
   type CSSProperties,
@@ -44,6 +45,13 @@ import {
 } from './game/constants'
 import type { Obstacle } from './game/constants'
 import { getStageTerrain, stepPlayerOnTerrain } from './game/terrain'
+import {
+  PORTAL_COOLDOWN_MS,
+  findPortalTransition,
+  getStagePortals,
+  teleportBall,
+  type Portal,
+} from './game/portals'
 import {
   createStage,
   stepBall,
@@ -268,6 +276,48 @@ function drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
     ctx.lineWidth = 1.5
     ctx.stroke()
   }
+}
+
+function drawPortal(
+  ctx: CanvasRenderingContext2D,
+  portal: Portal,
+  time: number,
+) {
+  ctx.save()
+  ctx.translate(portal.x, portal.y)
+  ctx.rotate((time / 900) % (Math.PI * 2))
+  ctx.shadowColor = portal.color
+  ctx.shadowBlur = 22
+
+  for (let ring = 0; ring < 3; ring += 1) {
+    ctx.strokeStyle = portal.color
+    ctx.globalAlpha = 1 - ring * 0.24
+    ctx.lineWidth = 5 - ring
+    ctx.setLineDash([9 + ring * 3, 6])
+    ctx.beginPath()
+    ctx.arc(0, 0, 20 + ring * 7, ring * 0.7, Math.PI * 2 + ring * 0.7)
+    ctx.stroke()
+  }
+
+  ctx.setLineDash([])
+  ctx.globalAlpha = 0.78
+  const core = ctx.createRadialGradient(0, 0, 2, 0, 0, 19)
+  core.addColorStop(0, '#020617')
+  core.addColorStop(0.7, '#09091f')
+  core.addColorStop(1, portal.color)
+  ctx.fillStyle = core
+  ctx.beginPath()
+  ctx.arc(0, 0, 19, 0, Math.PI * 2)
+  ctx.fill()
+
+  ctx.rotate(-((time / 900) % (Math.PI * 2)))
+  ctx.globalAlpha = 1
+  ctx.fillStyle = '#ffffff'
+  ctx.font = "700 11px 'Galmuri11', monospace"
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'middle'
+  ctx.fillText(portal.label, 0, 1)
+  ctx.restore()
 }
 
 function drawBrickFrame(ctx: CanvasRenderingContext2D) {
@@ -545,6 +595,7 @@ function GamePlay({
 }: Props) {
   const isStarting = startCountdown !== undefined
   const terrain = getStageTerrain(stageIndex)
+  const portalPairs = useMemo(() => getStagePortals(stageIndex), [stageIndex])
   const stageTimeSeconds = getStageTimeSeconds(stageIndex)
   const stageItemDropChance = getStageItemDropChance(stageIndex)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -587,6 +638,7 @@ function GamePlay({
   const speedBoostUntilRef = useRef(0)
   const invincibleUntilRef = useRef(0)
   const barrierCountRef = useRef(0)
+  const portalCooldownsRef = useRef(new Map<number, number>())
   const buffsDisplayRef = useRef<BuffDisplay>(NO_BUFFS)
   const aiKeysDisplayRef = useRef({ left: false, right: false, fire: false })
 
@@ -623,6 +675,7 @@ function GamePlay({
       speedBoostUntilRef.current = 0
       invincibleUntilRef.current = 0
       barrierCountRef.current = 0
+      portalCooldownsRef.current.clear()
       playerXRef.current = CANVAS_WIDTH / 2
       playerYRef.current = PLAYER_Y
       inputRef.current.releaseAll()
@@ -999,9 +1052,41 @@ function GamePlay({
             const ballDt = isHourglassActive
               ? dtSec * HOURGLASS_SLOW_FACTOR
               : dtSec
-            ballsRef.current = ballsRef.current.map((b) =>
-              stepBall(b, ballDt, terrain.platforms),
-            )
+            ballsRef.current = ballsRef.current.map((ball) => {
+              const steppedBall = stepBall(ball, ballDt, terrain.platforms)
+              if (
+                portalPairs.length === 0 ||
+                time < (portalCooldownsRef.current.get(ball.id) ?? 0)
+              ) {
+                return steppedBall
+              }
+
+              const transition = findPortalTransition(steppedBall, portalPairs)
+              if (!transition) return steppedBall
+
+              portalCooldownsRef.current.set(ball.id, time + PORTAL_COOLDOWN_MS)
+              spawnBurst(
+                particlesRef.current,
+                transition.from.x,
+                transition.from.y,
+                transition.from.color,
+              )
+              spawnBurst(
+                particlesRef.current,
+                transition.to.x,
+                transition.to.y,
+                transition.to.color,
+              )
+              popupsRef.current.push({
+                x: transition.to.x,
+                y: transition.to.y - 38,
+                text: 'WARP!',
+                life: 650,
+                maxLife: 650,
+                color: transition.to.color,
+              })
+              return teleportBall(steppedBall, transition.to)
+            })
           }
 
           if (harpoonsRef.current.length > 0) {
@@ -1292,6 +1377,10 @@ function GamePlay({
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
       drawBackground(ctx, stageIndex)
       for (const platform of terrain.platforms) drawObstacle(ctx, platform)
+      for (const pair of portalPairs) {
+        drawPortal(ctx, pair.entry, time)
+        drawPortal(ctx, pair.exit, time)
+      }
 
       for (const h of harpoonsRef.current) {
         drawHarpoon(ctx, h)
@@ -1388,6 +1477,7 @@ function GamePlay({
     stageIndex,
     stageItemDropChance,
     terrain,
+    portalPairs,
     onClear,
     onGameOver,
     demo,
@@ -1410,6 +1500,9 @@ function GamePlay({
     <div className="gameplay">
       <div className="gameplay-hud">
         <span className="hud-stage">Stage {stageIndex + 1}</span>
+        {portalPairs.length > 0 && (
+          <span className="hud-hazard">Portals ×{portalPairs.length}</span>
+        )}
         <div className="hp-bar" aria-label={`HP ${hp} of ${MAX_HP}`}>
           {Array.from({ length: MAX_HP }, (_, i) => (
             <span

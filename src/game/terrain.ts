@@ -95,7 +95,7 @@ export const STAGE_TERRAINS: readonly StageTerrain[] = STAGE_OBSTACLES.map(
     const targetCount = getTargetPlatformCount(stageIndex)
     const candidates = [
       primary,
-      ...EXTRA_PLATFORMS[stageIndex],
+      ...(EXTRA_PLATFORMS[stageIndex] ?? []),
       ...getSupplementalPlatforms(stageIndex),
     ]
     return { platforms: candidates.slice(0, targetCount) }

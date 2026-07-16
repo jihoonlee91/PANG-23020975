@@ -28,7 +28,7 @@ export const SCORE_BY_LEVEL = [300, 150, 100]
 
 export const COMBO_WINDOW_MS = 1500
 
-export const STAGE_COUNT = 20
+export const STAGE_COUNT = 30
 export const STAGE_TIME_SECONDS = 90
 export const TIME_BONUS_PER_SECOND = 10
 
@@ -68,6 +68,16 @@ export const STAGE_OBSTACLES: readonly Obstacle[] = [
   { x: 120, y: 330, width: 170, height: 18 },
   { x: 640, y: 160, width: 210, height: 18 },
   { x: 360, y: 290, width: 240, height: 18 },
+  { x: 110, y: 165, width: 180, height: 18 },
+  { x: 660, y: 285, width: 190, height: 18 },
+  { x: 350, y: 190, width: 220, height: 18 },
+  { x: 70, y: 345, width: 200, height: 18 },
+  { x: 690, y: 155, width: 180, height: 18 },
+  { x: 245, y: 335, width: 230, height: 18 },
+  { x: 535, y: 205, width: 210, height: 18 },
+  { x: 145, y: 255, width: 190, height: 18 },
+  { x: 675, y: 350, width: 175, height: 18 },
+  { x: 355, y: 145, width: 250, height: 18 },
 ]
 
 export function getStageObstacle(stageIndex: number): Obstacle {
@@ -93,7 +103,7 @@ export function getStageItemDropChance(stageIndex: number): number {
     0,
     Math.min(STAGE_COUNT - 1, Math.floor(stageIndex)),
   )
-  return Math.max(0.1, ITEM_DROP_CHANCE - normalizedStage * 0.002)
+  return Math.max(0.08, ITEM_DROP_CHANCE - normalizedStage * 0.002)
 }
 // Relative weights within a drop: double wire/clock/hourglass/barrier are common,
 // 1UP and dynamite are intentionally rare (dynamite is a risk item, 1UP is a reward item).

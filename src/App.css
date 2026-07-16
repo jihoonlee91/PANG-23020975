@@ -2043,6 +2043,13 @@
   color: var(--retro-yellow);
 }
 
+#root .hud-hazard {
+  border-color: #c084fc;
+  color: #f0abfc;
+  background: #3b0764;
+  text-shadow: 1px 1px 0 #09091f;
+}
+
 #root .hp-filled {
   border-color: var(--retro-cream);
   background: var(--retro-red);
@@ -2140,6 +2147,16 @@
   border: 1px solid var(--retro-cream);
   border-radius: 1px;
   box-shadow: 2px 2px 0 var(--retro-ink);
+}
+
+#root .stage-map-badge-portal {
+  top: auto;
+  right: 6px;
+  bottom: 6px;
+  left: auto;
+  border-color: #e879f9;
+  color: #fff;
+  background: #701a75;
 }
 
 #root .item-notice,
