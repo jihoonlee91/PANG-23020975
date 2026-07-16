@@ -27,13 +27,12 @@ const STAGE_ADVANCE_COUNTDOWN = 5
 const TUTORIAL_KEY = 'pang.tutorial.complete.v1'
 const TUTORIAL_STEPS = [
   'Hold the left and right controls to move.',
-  'Use Up and Down near a ladder to climb between platforms.',
   'Press FIRE or Space to launch a harpoon.',
   'Pop every ball. Large balls split into smaller ones.',
   'Avoid the balls: contact costs one HP.',
 ]
 const CONTROLS_SUMMARY =
-  'Move: ←/→ or A/D · Climb: ↑/↓ or W/S · Fire: Space · Touch controls supported'
+  'Move: ←/→ or A/D · Fire: Space · Touch controls supported'
 
 function App() {
   const [screen, setScreen] = useState<Screen>('main')
@@ -335,10 +334,8 @@ function App() {
           {tutorialStep === 0
             ? '◀  ▶'
             : tutorialStep === 1
-              ? '▲  ▼'
-              : tutorialStep === 2
-                ? 'FIRE'
-                : '●  →  • •'}
+              ? 'FIRE'
+              : '●  →  • •'}
         </div>
         <button
           type="button"

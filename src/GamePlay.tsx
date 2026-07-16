@@ -42,11 +42,7 @@ import {
   SCORE_BONUS_POINTS,
 } from './game/constants'
 import type { Obstacle } from './game/constants'
-import {
-  getStageTerrain,
-  stepPlayerOnTerrain,
-  type Ladder,
-} from './game/terrain'
+import { getStageTerrain, stepPlayerOnTerrain } from './game/terrain'
 import {
   createStage,
   stepBall,
@@ -86,7 +82,6 @@ const BALL_COLORS = ['#fb7185', '#facc15', '#38bdf8']
 
 const HINTS = [
   '← → or A / D: move',
-  '↑ ↓ or W / S: climb when aligned with a ladder',
   'Space: fire (only 1 harpoon by default, 2 with double wire)',
   'Hitting a ball shrinks and splits it in two; hitting the smallest removes it',
   'The striped platform blocks harpoons and bounces balls off',
@@ -253,29 +248,6 @@ function drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
   ctx.strokeStyle = '#27272a'
   ctx.lineWidth = 2
   ctx.strokeRect(x, y, width, height)
-}
-
-function drawLadder(ctx: CanvasRenderingContext2D, ladder: Ladder) {
-  const left = ladder.x - ladder.width / 2
-  const right = ladder.x + ladder.width / 2
-  ctx.save()
-  ctx.strokeStyle = '#5b3a1f'
-  ctx.lineWidth = 6
-  ctx.beginPath()
-  ctx.moveTo(left, ladder.topY)
-  ctx.lineTo(left, ladder.bottomY)
-  ctx.moveTo(right, ladder.topY)
-  ctx.lineTo(right, ladder.bottomY)
-  ctx.stroke()
-  ctx.strokeStyle = '#d6a45f'
-  ctx.lineWidth = 3
-  for (let y = ladder.topY + 10; y < ladder.bottomY; y += 22) {
-    ctx.beginPath()
-    ctx.moveTo(left, y)
-    ctx.lineTo(right, y)
-    ctx.stroke()
-  }
-  ctx.restore()
 }
 
 function drawHarpoon(ctx: CanvasRenderingContext2D, harpoon: Harpoon) {
@@ -638,14 +610,6 @@ function GamePlay({
         inputRef.current.set('keyboard-left', 'left', true)
       if (key === 'arrowright' || key === 'd')
         inputRef.current.set('keyboard-right', 'right', true)
-      if (key === 'arrowup' || key === 'w') {
-        e.preventDefault()
-        inputRef.current.set('keyboard-up', 'up', true)
-      }
-      if (key === 'arrowdown' || key === 's') {
-        e.preventDefault()
-        inputRef.current.set('keyboard-down', 'down', true)
-      }
       if (key === ' ') {
         e.preventDefault()
         inputRef.current.set('keyboard-fire', 'fire', true)
@@ -657,10 +621,6 @@ function GamePlay({
         inputRef.current.release('keyboard-left')
       if (key === 'arrowright' || key === 'd')
         inputRef.current.release('keyboard-right')
-      if (key === 'arrowup' || key === 'w')
-        inputRef.current.release('keyboard-up')
-      if (key === 'arrowdown' || key === 's')
-        inputRef.current.release('keyboard-down')
       if (key === ' ') inputRef.current.release('keyboard-fire')
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -872,8 +832,6 @@ function GamePlay({
               {
                 left: dragX < playerXRef.current,
                 right: dragX > playerXRef.current,
-                up: false,
-                down: false,
               },
               Math.abs(dragX - playerXRef.current) / playerSpeed,
               playerSpeed,
@@ -1230,7 +1188,6 @@ function GamePlay({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
       drawBackground(ctx, stageIndex)
-      for (const ladder of terrain.ladders) drawLadder(ctx, ladder)
       for (const platform of terrain.platforms) drawObstacle(ctx, platform)
 
       for (const h of harpoonsRef.current) {
@@ -1457,7 +1414,7 @@ function GamePlay({
         <div className="canvas-column">
           <canvas
             ref={canvasRef}
-            aria-label="PANG game field. Move left and right, climb ladders, and fire harpoons to pop every ball."
+            aria-label="PANG game field. Move left and right and fire harpoons to pop every ball."
             style={{ border: '1px solid #2e303a', touchAction: 'none' }}
             onPointerDown={(e) => {
               if (demo || paused || isStarting) return

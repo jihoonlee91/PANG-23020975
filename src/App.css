@@ -440,38 +440,18 @@
   touch-action: none;
 }
 
-.touch-dpad {
-  display: grid;
-  grid-template-columns: repeat(3, var(--touch-size));
-  grid-template-rows: repeat(3, var(--touch-size));
-  gap: 8px;
-  align-items: center;
-  justify-items: center;
-}
-
-.touch-up {
-  grid-column: 2;
-  grid-row: 1;
+.touch-move {
+  display: flex;
+  gap: 0;
 }
 
 .touch-left {
-  grid-column: 1;
-  grid-row: 2;
-}
-
-.touch-down {
-  grid-column: 2;
-  grid-row: 3;
+  border-radius: 18px 0 0 18px;
 }
 
 .touch-right {
-  grid-column: 3;
-  grid-row: 2;
-}
-
-.touch-climb {
-  border-color: rgba(196, 181, 253, 0.9);
-  background: rgba(91, 33, 182, var(--touch-opacity));
+  margin-left: -2px;
+  border-radius: 0 18px 18px 0;
 }
 
 .touch-button {
@@ -720,18 +700,12 @@
     pointer-events: none;
   }
 
-  .touch-dpad,
+  .touch-move,
   .touch-fire {
     pointer-events: auto;
   }
 
-  .touch-dpad {
-    grid-template-columns: repeat(3, min(var(--touch-size), 58px));
-    grid-template-rows: repeat(3, min(var(--touch-size), 58px));
-    gap: 5px;
-  }
-
-  .touch-dpad .touch-button {
+  .touch-move .touch-button {
     width: min(var(--touch-size), 58px);
     height: min(var(--touch-size), 58px);
     min-width: 52px;
@@ -744,16 +718,41 @@
   }
 
   .item-notice {
-    top: max(44px, calc(env(safe-area-inset-top) + 38px));
-    width: min(520px, calc(100vw - 190px));
-    padding: 10px 14px;
+    top: max(40px, calc(env(safe-area-inset-top) + 36px));
+    right: max(8px, env(safe-area-inset-right));
+    left: auto;
+    gap: 7px;
+    width: min(360px, calc(100vw - 24px));
+    padding: 5px 8px;
+    border-width: 2px;
+    border-radius: 10px;
+    transform: none;
+    animation: none;
   }
 
   .item-notice-icon {
-    flex-basis: 48px;
-    width: 48px;
-    height: 48px;
-    font-size: 19px;
+    flex-basis: 32px;
+    width: 32px;
+    height: 32px;
+    border-width: 2px;
+    font-size: 14px;
+  }
+
+  .item-notice-copy {
+    gap: 2px;
+  }
+
+  .item-notice-copy strong {
+    font-size: 11px;
+    line-height: 1.2;
+  }
+
+  .item-notice-copy span {
+    overflow: hidden;
+    font-size: 9px;
+    line-height: 1.25;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 }
 

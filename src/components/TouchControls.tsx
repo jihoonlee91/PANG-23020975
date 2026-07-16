@@ -40,27 +40,13 @@ export default function TouchControls({
       }
       aria-label="Touch controls"
     >
-      <div className="touch-dpad" aria-label="Direction pad">
-        <button
-          type="button"
-          className="touch-button touch-climb touch-up"
-          {...bind('up', 'Climb up')}
-        >
-          ↑
-        </button>
+      <div className="touch-move" aria-label="Move left or right">
         <button
           type="button"
           className="touch-button touch-left"
           {...bind('left', 'Move left')}
         >
           ←
-        </button>
-        <button
-          type="button"
-          className="touch-button touch-climb touch-down"
-          {...bind('down', 'Climb down')}
-        >
-          ↓
         </button>
         <button
           type="button"

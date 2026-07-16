@@ -9,8 +9,6 @@ describe('InputController', () => {
     expect(input.snapshot()).toEqual({
       left: true,
       right: false,
-      up: false,
-      down: false,
       fire: true,
     })
   })
@@ -25,17 +23,8 @@ describe('InputController', () => {
     expect(input.snapshot()).toEqual({
       left: false,
       right: false,
-      up: false,
-      down: false,
       fire: false,
     })
-  })
-
-  it('tracks ladder climbing input independently', () => {
-    const input = new InputController()
-    input.set('keyboard-up', 'up', true)
-    expect(input.snapshot().up).toBe(true)
-    expect(input.snapshot().down).toBe(false)
   })
 
   it('consumes a queued fire exactly once', () => {

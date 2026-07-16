@@ -7,7 +7,6 @@ export const PLAYER_WIDTH = 40
 export const PLAYER_HEIGHT = 16
 export const PLAYER_Y = CANVAS_HEIGHT - 30
 export const PLAYER_SPEED = 300
-export const PLAYER_CLIMB_SPEED = 210
 
 export const HARPOON_SPEED = 700
 export const VULCAN_SPEED = 1050
