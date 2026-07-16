@@ -647,9 +647,9 @@
   }
 
   .canvas-column {
+    position: relative;
     display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(270px, 32vw, 300px);
-    gap: 10px;
+    grid-template-columns: minmax(0, 1fr);
     width: 100%;
     height: 100%;
     align-items: center;
@@ -662,12 +662,23 @@
   }
 
   .touch-controls {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
     display: flex;
     width: 100%;
     height: 100%;
     gap: 8px;
+    padding-right: max(12px, env(safe-area-inset-right));
+    padding-left: max(12px, env(safe-area-inset-left));
     align-items: center;
-    justify-content: center;
+    justify-content: space-between;
+    pointer-events: none;
+  }
+
+  .touch-dpad,
+  .touch-fire {
+    pointer-events: auto;
   }
 
   .touch-dpad {
