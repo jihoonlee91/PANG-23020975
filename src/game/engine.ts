@@ -26,17 +26,21 @@ import type { Ball, Item, ItemType } from './types'
 const EARLY_STAGE_BALLS: readonly (readonly Omit<Ball, 'id'>[])[] = [
   [{ x: CANVAS_WIDTH / 2, y: 110, vx: 90, vy: 0, level: 2 }],
   [
-    { x: CANVAS_WIDTH * 0.32, y: 130, vx: 95, vy: 0, level: 1 },
-    { x: CANVAS_WIDTH * 0.68, y: 130, vx: -95, vy: 0, level: 1 },
+    { x: CANVAS_WIDTH * 0.42, y: 115, vx: 100, vy: 0, level: 2 },
+    { x: CANVAS_WIDTH * 0.7, y: 155, vx: -90, vy: 0, level: 0 },
   ],
-  [{ x: CANVAS_WIDTH / 2, y: 105, vx: 105, vy: 0, level: 2 }],
   [
-    { x: CANVAS_WIDTH * 0.34, y: 105, vx: 110, vy: 0, level: 2 },
-    { x: CANVAS_WIDTH * 0.72, y: 150, vx: -100, vy: 0, level: 1 },
+    { x: CANVAS_WIDTH * 0.36, y: 105, vx: 110, vy: 0, level: 2 },
+    { x: CANVAS_WIDTH * 0.7, y: 145, vx: -105, vy: 0, level: 1 },
   ],
   [
     { x: CANVAS_WIDTH * 0.34, y: 105, vx: 115, vy: 0, level: 2 },
-    { x: CANVAS_WIDTH * 0.68, y: 105, vx: -115, vy: 0, level: 2 },
+    { x: CANVAS_WIDTH * 0.7, y: 120, vx: -115, vy: 0, level: 2 },
+  ],
+  [
+    { x: CANVAS_WIDTH * 0.25, y: 105, vx: 125, vy: 0, level: 2 },
+    { x: CANVAS_WIDTH * 0.55, y: 125, vx: -125, vy: 0, level: 2 },
+    { x: CANVAS_WIDTH * 0.78, y: 160, vx: -120, vy: 0, level: 1 },
   ],
 ]
 
@@ -46,8 +50,8 @@ export function createStage(stageIndex: number): Ball[] {
     return earlyLayout.map((ball, id) => ({ id, ...ball }))
   }
 
-  const count = Math.min(Math.floor(stageIndex / 2) + 1, 8)
-  const speedMultiplier = 1 + stageIndex * 0.15
+  const count = Math.min(Math.floor((stageIndex - 5) / 2) + 3, 8)
+  const speedMultiplier = 1 + stageIndex * 0.08
   const baseVx = 100 * speedMultiplier
   const balls: Ball[] = []
   for (let i = 0; i < count; i++) {
@@ -251,8 +255,9 @@ export function explodeToSmallest(balls: Ball[], nextId: () => number): Ball[] {
  */
 export function rollItemDrop(
   rand: () => number = Math.random,
+  dropChance = ITEM_DROP_CHANCE,
 ): ItemType | null {
-  if (rand() > ITEM_DROP_CHANCE) return null
+  if (rand() > dropChance) return null
 
   const total = ITEM_WEIGHTS.reduce((sum, [, weight]) => sum + weight, 0)
   let roll = rand() * total

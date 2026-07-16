@@ -9,6 +9,8 @@ import {
   PLAYER_Y,
   STAGE_OBSTACLES,
   getStageObstacle,
+  getStageTimeSeconds,
+  getStageItemDropChance,
 } from './constants'
 import {
   createStage,
@@ -39,23 +41,49 @@ describe('createStage', () => {
     expect(balls[0].level).toBe(2)
   })
 
-  it('keeps the second stage simple with two medium balls', () => {
+  it('keeps the second stage simple while adding one small threat', () => {
     const balls = createStage(1)
     expect(balls).toHaveLength(2)
-    expect(balls.every((ball) => ball.level === 1)).toBe(true)
+    expect(balls.map((ball) => ball.level)).toEqual([2, 0])
   })
 
   it('introduces difficulty gradually in the early stages', () => {
-    expect(createStage(2)).toHaveLength(1)
+    expect(createStage(2)).toHaveLength(2)
     expect(createStage(3)).toHaveLength(2)
-    expect(createStage(4)).toHaveLength(2)
+    expect(createStage(4)).toHaveLength(3)
   })
 
   it('caps the ball count at 8 for late stages', () => {
-    expect(createStage(6)).toHaveLength(4)
+    expect(createStage(6)).toHaveLength(3)
     expect(createStage(7)).toHaveLength(4)
-    expect(createStage(14)).toHaveLength(8)
+    expect(createStage(14)).toHaveLength(7)
     expect(createStage(20)).toHaveLength(8)
+  })
+
+  it('raises workload, speed, and time pressure steadily across all stages', () => {
+    const workload = (stageIndex: number) =>
+      createStage(stageIndex).reduce(
+        (total, ball) => total + (2 ** (ball.level + 1) - 1),
+        0,
+      )
+    const averageSpeed = (stageIndex: number) => {
+      const balls = createStage(stageIndex)
+      return (
+        balls.reduce((total, ball) => total + Math.abs(ball.vx), 0) /
+        balls.length
+      )
+    }
+
+    for (let stage = 1; stage < 20; stage += 1) {
+      expect(workload(stage)).toBeGreaterThanOrEqual(workload(stage - 1))
+      expect(averageSpeed(stage)).toBeGreaterThan(averageSpeed(stage - 1))
+      expect(getStageTimeSeconds(stage)).toBeLessThan(
+        getStageTimeSeconds(stage - 1),
+      )
+      expect(getStageItemDropChance(stage)).toBeLessThan(
+        getStageItemDropChance(stage - 1),
+      )
+    }
   })
 })
 

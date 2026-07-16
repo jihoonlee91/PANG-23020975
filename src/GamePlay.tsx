@@ -21,7 +21,8 @@ import {
   SCORE_BY_LEVEL,
   COMBO_WINDOW_MS,
   STAGE_COUNT,
-  STAGE_TIME_SECONDS,
+  getStageTimeSeconds,
+  getStageItemDropChance,
   TIME_BONUS_PER_SECOND,
   ITEM_RADIUS,
   MAX_HARPOONS_DEFAULT,
@@ -544,6 +545,8 @@ function GamePlay({
 }: Props) {
   const isStarting = startCountdown !== undefined
   const terrain = getStageTerrain(stageIndex)
+  const stageTimeSeconds = getStageTimeSeconds(stageIndex)
+  const stageItemDropChance = getStageItemDropChance(stageIndex)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const playerXRef = useRef(CANVAS_WIDTH / 2)
   const playerYRef = useRef(PLAYER_Y)
@@ -568,8 +571,8 @@ function GamePlay({
   const stageStartScoreRef = useRef(0)
   const dprRef = useRef(1)
   const pausedAtRef = useRef<number | null>(null)
-  const timeRemainingRef = useRef(STAGE_TIME_SECONDS)
-  const lastDisplayedTimeRef = useRef(STAGE_TIME_SECONDS)
+  const timeRemainingRef = useRef(stageTimeSeconds)
+  const lastDisplayedTimeRef = useRef(stageTimeSeconds)
   const lastFireAtRef = useRef(0)
   const itemNoticeTimerRef = useRef<number | null>(null)
   const endedRef = useRef(false)
@@ -589,7 +592,7 @@ function GamePlay({
 
   const [hp, setHp] = useState(MAX_HP)
   const [score, setScore] = useState(initialScore)
-  const [timeRemaining, setTimeRemaining] = useState(STAGE_TIME_SECONDS)
+  const [timeRemaining, setTimeRemaining] = useState(stageTimeSeconds)
   const [itemNotice, setItemNotice] = useState<ItemType | null>(null)
   const [paused, setPaused] = useState(false)
   const [fps, setFps] = useState(60)
@@ -626,8 +629,8 @@ function GamePlay({
       dragRef.current = null
       dragTargetXRef.current = null
       fireRequestedRef.current = false
-      timeRemainingRef.current = STAGE_TIME_SECONDS
-      lastDisplayedTimeRef.current = STAGE_TIME_SECONDS
+      timeRemainingRef.current = stageTimeSeconds
+      lastDisplayedTimeRef.current = stageTimeSeconds
       lastFireAtRef.current = 0
       if (itemNoticeTimerRef.current !== null) {
         window.clearTimeout(itemNoticeTimerRef.current)
@@ -636,7 +639,7 @@ function GamePlay({
       buffsDisplayRef.current = NO_BUFFS
       setHp(MAX_HP)
       setBuffs(NO_BUFFS)
-      setTimeRemaining(STAGE_TIME_SECONDS)
+      setTimeRemaining(stageTimeSeconds)
       setItemNotice(null)
       if (restoreScore) {
         scoreRef.current = stageStartScoreRef.current
@@ -645,7 +648,7 @@ function GamePlay({
         stageStartScoreRef.current = scoreRef.current
       }
     },
-    [stageIndex],
+    [stageIndex, stageTimeSeconds],
   )
 
   useEffect(() => {
@@ -1055,7 +1058,7 @@ function GamePlay({
                 ...children,
               ]
 
-              const droppedType = rollItemDrop()
+              const droppedType = rollItemDrop(Math.random, stageItemDropChance)
               if (droppedType) {
                 itemsRef.current = [
                   ...itemsRef.current,
@@ -1383,6 +1386,7 @@ function GamePlay({
     return () => cancelAnimationFrame(rafId)
   }, [
     stageIndex,
+    stageItemDropChance,
     terrain,
     onClear,
     onGameOver,

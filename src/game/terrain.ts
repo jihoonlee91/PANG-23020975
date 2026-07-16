@@ -58,12 +58,47 @@ const EARLY_STAGE_TERRAINS: readonly StageTerrain[] = [
   { platforms: [{ x: 150, y: 310, width: 210, height: 18 }] },
 ]
 
+function getTargetPlatformCount(stageIndex: number): number {
+  if (stageIndex < 2) return 0
+  if (stageIndex < 5) return 1
+  return Math.min(4, 2 + Math.floor((stageIndex - 5) / 5))
+}
+
+function getSupplementalPlatforms(stageIndex: number): readonly Obstacle[] {
+  return [
+    {
+      x: 70 + ((stageIndex * 47) % 180),
+      y: 150 + (stageIndex % 3) * 60,
+      width: 150,
+      height: 18,
+    },
+    {
+      x: 650 - ((stageIndex * 41) % 120),
+      y: 205 + ((stageIndex + 1) % 3) * 55,
+      width: 155,
+      height: 18,
+    },
+    {
+      x: 370 + (stageIndex % 2) * 70,
+      y: 145 + (stageIndex % 4) * 50,
+      width: 160,
+      height: 18,
+    },
+  ]
+}
+
 export const STAGE_TERRAINS: readonly StageTerrain[] = STAGE_OBSTACLES.map(
   (primary, stageIndex) => {
     const earlyTerrain = EARLY_STAGE_TERRAINS[stageIndex]
     if (earlyTerrain) return earlyTerrain
 
-    return { platforms: [primary, ...EXTRA_PLATFORMS[stageIndex]] }
+    const targetCount = getTargetPlatformCount(stageIndex)
+    const candidates = [
+      primary,
+      ...EXTRA_PLATFORMS[stageIndex],
+      ...getSupplementalPlatforms(stageIndex),
+    ]
+    return { platforms: candidates.slice(0, targetCount) }
   },
 )
 

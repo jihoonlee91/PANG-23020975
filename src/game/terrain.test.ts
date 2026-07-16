@@ -10,9 +10,17 @@ describe('stage terrain', () => {
     expect(STAGE_TERRAINS[2].platforms).toHaveLength(1)
     expect(STAGE_TERRAINS[3].platforms).toHaveLength(1)
 
-    for (const terrain of STAGE_TERRAINS.slice(4)) {
-      expect(terrain.platforms.length).toBeGreaterThanOrEqual(2)
+    const platformCounts = STAGE_TERRAINS.map(
+      (terrain) => terrain.platforms.length,
+    )
+    for (let stage = 1; stage < platformCounts.length; stage += 1) {
+      expect(platformCounts[stage]).toBeGreaterThanOrEqual(
+        platformCounts[stage - 1],
+      )
     }
+    expect(platformCounts[5]).toBe(2)
+    expect(platformCounts[10]).toBe(3)
+    expect(platformCounts[15]).toBe(4)
   })
 
   it('keeps the player on the ground while moving horizontally', () => {

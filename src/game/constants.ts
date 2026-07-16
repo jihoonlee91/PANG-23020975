@@ -32,6 +32,14 @@ export const STAGE_COUNT = 20
 export const STAGE_TIME_SECONDS = 90
 export const TIME_BONUS_PER_SECOND = 10
 
+export function getStageTimeSeconds(stageIndex: number): number {
+  const normalizedStage = Math.max(
+    0,
+    Math.min(STAGE_COUNT - 1, Math.floor(stageIndex)),
+  )
+  return STAGE_TIME_SECONDS - normalizedStage
+}
+
 export type Obstacle = {
   x: number
   y: number
@@ -79,6 +87,14 @@ export const OBSTACLE_Y = DEFAULT_OBSTACLE.y
 export const ITEM_RADIUS = 12
 export const ITEM_GRAVITY = 260
 export const ITEM_DROP_CHANCE = 0.14
+
+export function getStageItemDropChance(stageIndex: number): number {
+  const normalizedStage = Math.max(
+    0,
+    Math.min(STAGE_COUNT - 1, Math.floor(stageIndex)),
+  )
+  return Math.max(0.1, ITEM_DROP_CHANCE - normalizedStage * 0.002)
+}
 // Relative weights within a drop: double wire/clock/hourglass/barrier are common,
 // 1UP and dynamite are intentionally rare (dynamite is a risk item, 1UP is a reward item).
 export const ITEM_WEIGHTS: [ItemType, number][] = [
