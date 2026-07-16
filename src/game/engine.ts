@@ -19,6 +19,7 @@ import {
   ITEM_GRAVITY,
   ITEM_DROP_CHANCE,
   ITEM_WEIGHTS,
+  type Obstacle,
 } from './constants'
 import type { Ball, Item, ItemType } from './types'
 
@@ -55,7 +56,16 @@ function reflectAway(
   return towardPositive ? minMagnitude : -minMagnitude
 }
 
-export function stepBall(ball: Ball, dtSec: number): Ball {
+export function stepBall(
+  ball: Ball,
+  dtSec: number,
+  obstacle: Obstacle = {
+    x: OBSTACLE_X,
+    y: OBSTACLE_Y,
+    width: OBSTACLE_WIDTH,
+    height: OBSTACLE_HEIGHT,
+  },
+): Ball {
   const r = LEVEL_RADIUS[ball.level]
   const verticalBounceSpeed = LEVEL_BOUNCE_SPEED[ball.level]
   let { x, y, vx, vy } = ball
@@ -81,24 +91,24 @@ export function stepBall(ball: Ball, dtSec: number): Ball {
   }
 
   if (
-    x + r > OBSTACLE_X &&
-    x - r < OBSTACLE_X + OBSTACLE_WIDTH &&
-    y + r > OBSTACLE_Y &&
-    y - r < OBSTACLE_Y + OBSTACLE_HEIGHT
+    x + r > obstacle.x &&
+    x - r < obstacle.x + obstacle.width &&
+    y + r > obstacle.y &&
+    y - r < obstacle.y + obstacle.height
   ) {
-    const fromTop = y < OBSTACLE_Y
-    const fromBottom = y > OBSTACLE_Y + OBSTACLE_HEIGHT
+    const fromTop = y < obstacle.y
+    const fromBottom = y > obstacle.y + obstacle.height
     if (fromTop) {
-      y = OBSTACLE_Y - r
+      y = obstacle.y - r
       vy = reflectAway(vy, false, verticalBounceSpeed)
     } else if (fromBottom) {
-      y = OBSTACLE_Y + OBSTACLE_HEIGHT + r
+      y = obstacle.y + obstacle.height + r
       vy = reflectAway(vy, true, verticalBounceSpeed)
-    } else if (x < OBSTACLE_X) {
-      x = OBSTACLE_X - r
+    } else if (x < obstacle.x) {
+      x = obstacle.x - r
       vx = reflectAway(vx, false)
     } else {
-      x = OBSTACLE_X + OBSTACLE_WIDTH + r
+      x = obstacle.x + obstacle.width + r
       vx = reflectAway(vx, true)
     }
   }
@@ -109,12 +119,18 @@ export function stepBall(ball: Ball, dtSec: number): Ball {
 export function harpoonHitsObstacle(
   harpoonX: number,
   harpoonY: number,
+  obstacle: Obstacle = {
+    x: OBSTACLE_X,
+    y: OBSTACLE_Y,
+    width: OBSTACLE_WIDTH,
+    height: OBSTACLE_HEIGHT,
+  },
 ): boolean {
   return (
-    harpoonX > OBSTACLE_X &&
-    harpoonX < OBSTACLE_X + OBSTACLE_WIDTH &&
-    harpoonY > OBSTACLE_Y &&
-    harpoonY < OBSTACLE_Y + OBSTACLE_HEIGHT
+    harpoonX > obstacle.x &&
+    harpoonX < obstacle.x + obstacle.width &&
+    harpoonY > obstacle.y &&
+    harpoonY < obstacle.y + obstacle.height
   )
 }
 
@@ -234,6 +250,7 @@ export function predictLandingSpot(
   ball: Ball,
   horizonSec = 1.5,
   dtSec = 1 / 60,
+  obstacle?: Obstacle,
 ): { x: number; time: number } {
   let sim = ball
   let bestX = ball.x
@@ -242,7 +259,7 @@ export function predictLandingSpot(
   let t = 0
 
   while (t < horizonSec) {
-    sim = stepBall(sim, dtSec)
+    sim = stepBall(sim, dtSec, obstacle)
     t += dtSec
     if (sim.y > bestY) {
       bestY = sim.y

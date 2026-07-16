@@ -32,10 +32,38 @@ export const STAGE_COUNT = 10
 export const STAGE_TIME_SECONDS = 90
 export const TIME_BONUS_PER_SECOND = 10
 
-export const OBSTACLE_WIDTH = 160
-export const OBSTACLE_HEIGHT = 18
-export const OBSTACLE_X = CANVAS_WIDTH / 2 - OBSTACLE_WIDTH / 2
-export const OBSTACLE_Y = CANVAS_HEIGHT / 2 - OBSTACLE_HEIGHT / 2
+export type Obstacle = {
+  x: number
+  y: number
+  width: number
+  height: number
+}
+
+export const STAGE_OBSTACLES: readonly Obstacle[] = [
+  { x: 400, y: 261, width: 160, height: 18 },
+  { x: 150, y: 210, width: 180, height: 18 },
+  { x: 630, y: 330, width: 180, height: 18 },
+  { x: 80, y: 300, width: 200, height: 18 },
+  { x: 680, y: 180, width: 170, height: 18 },
+  { x: 320, y: 360, width: 220, height: 18 },
+  { x: 520, y: 230, width: 190, height: 18 },
+  { x: 180, y: 350, width: 160, height: 18 },
+  { x: 700, y: 310, width: 150, height: 18 },
+  { x: 380, y: 170, width: 200, height: 18 },
+]
+
+export function getStageObstacle(stageIndex: number): Obstacle {
+  const normalizedIndex =
+    ((stageIndex % STAGE_OBSTACLES.length) + STAGE_OBSTACLES.length) %
+    STAGE_OBSTACLES.length
+  return STAGE_OBSTACLES[normalizedIndex]
+}
+
+const DEFAULT_OBSTACLE = STAGE_OBSTACLES[0]
+export const OBSTACLE_WIDTH = DEFAULT_OBSTACLE.width
+export const OBSTACLE_HEIGHT = DEFAULT_OBSTACLE.height
+export const OBSTACLE_X = DEFAULT_OBSTACLE.x
+export const OBSTACLE_Y = DEFAULT_OBSTACLE.y
 
 // --- Power-up items ---
 export const ITEM_RADIUS = 12

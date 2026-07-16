@@ -22,10 +22,7 @@ import {
   STAGE_COUNT,
   STAGE_TIME_SECONDS,
   TIME_BONUS_PER_SECOND,
-  OBSTACLE_X,
-  OBSTACLE_Y,
-  OBSTACLE_WIDTH,
-  OBSTACLE_HEIGHT,
+  getStageObstacle,
   ITEM_RADIUS,
   MAX_HARPOONS_DEFAULT,
   MAX_HARPOONS_DOUBLE_WIRE,
@@ -39,6 +36,7 @@ import {
   HOURGLASS_DURATION_MS,
   HOURGLASS_SLOW_FACTOR,
 } from './game/constants'
+import type { Obstacle } from './game/constants'
 import {
   createStage,
   stepBall,
@@ -178,40 +176,32 @@ type Popup = {
   color?: string
 }
 
-function drawObstacle(ctx: CanvasRenderingContext2D) {
+function drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
+  const { x, y, width, height } = obstacle
   ctx.save()
   ctx.shadowColor = '#00000066'
   ctx.shadowBlur = 6
   ctx.shadowOffsetY = 3
 
-  const bodyGradient = ctx.createLinearGradient(
-    0,
-    OBSTACLE_Y,
-    0,
-    OBSTACLE_Y + OBSTACLE_HEIGHT,
-  )
+  const bodyGradient = ctx.createLinearGradient(0, y, 0, y + height)
   bodyGradient.addColorStop(0, '#d4d4d8')
   bodyGradient.addColorStop(1, '#71717a')
   ctx.fillStyle = bodyGradient
-  ctx.fillRect(OBSTACLE_X, OBSTACLE_Y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT)
+  ctx.fillRect(x, y, width, height)
   ctx.restore()
 
   ctx.save()
   ctx.beginPath()
-  ctx.rect(OBSTACLE_X, OBSTACLE_Y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT)
+  ctx.rect(x, y, width, height)
   ctx.clip()
   ctx.fillStyle = '#facc15'
   const stripeWidth = 14
-  for (
-    let sx = OBSTACLE_X - OBSTACLE_HEIGHT;
-    sx < OBSTACLE_X + OBSTACLE_WIDTH;
-    sx += stripeWidth * 2
-  ) {
+  for (let sx = x - height; sx < x + width; sx += stripeWidth * 2) {
     ctx.beginPath()
-    ctx.moveTo(sx, OBSTACLE_Y + OBSTACLE_HEIGHT)
-    ctx.lineTo(sx + OBSTACLE_HEIGHT, OBSTACLE_Y)
-    ctx.lineTo(sx + OBSTACLE_HEIGHT + stripeWidth, OBSTACLE_Y)
-    ctx.lineTo(sx + stripeWidth, OBSTACLE_Y + OBSTACLE_HEIGHT)
+    ctx.moveTo(sx, y + height)
+    ctx.lineTo(sx + height, y)
+    ctx.lineTo(sx + height + stripeWidth, y)
+    ctx.lineTo(sx + stripeWidth, y + height)
     ctx.closePath()
     ctx.fill()
   }
@@ -219,7 +209,7 @@ function drawObstacle(ctx: CanvasRenderingContext2D) {
 
   ctx.strokeStyle = '#27272a'
   ctx.lineWidth = 2
-  ctx.strokeRect(OBSTACLE_X, OBSTACLE_Y, OBSTACLE_WIDTH, OBSTACLE_HEIGHT)
+  ctx.strokeRect(x, y, width, height)
 }
 
 function drawHarpoon(ctx: CanvasRenderingContext2D, harpoon: Harpoon) {
@@ -407,6 +397,7 @@ function GamePlay({
   settings,
   onQuit,
 }: Props) {
+  const obstacle = getStageObstacle(stageIndex)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const playerXRef = useRef(CANVAS_WIDTH / 2)
   const ballsRef = useRef<Ball[]>(createStage(stageIndex))
@@ -707,7 +698,7 @@ function GamePlay({
               x: number
               time: number
             } | null>((best, b) => {
-              const { x, time } = predictLandingSpot(b)
+              const { x, time } = predictLandingSpot(b, 1.5, 1 / 60, obstacle)
               return !best || time < best.time ? { ball: b, x, time } : best
             }, null)
             const target = prediction?.ball ?? null
@@ -805,14 +796,19 @@ function GamePlay({
               if (harpoon.kind === 'powerWire') {
                 return (harpoon.expiresAt ?? 0) > time
               }
-              return harpoon.y > 0 && !harpoonHitsObstacle(harpoon.x, harpoon.y)
+              return (
+                harpoon.y > 0 &&
+                !harpoonHitsObstacle(harpoon.x, harpoon.y, obstacle)
+              )
             })
 
           if (!isClockActive) {
             const ballDt = isHourglassActive
               ? dtSec * HOURGLASS_SLOW_FACTOR
               : dtSec
-            ballsRef.current = ballsRef.current.map((b) => stepBall(b, ballDt))
+            ballsRef.current = ballsRef.current.map((b) =>
+              stepBall(b, ballDt, obstacle),
+            )
           }
 
           if (harpoonsRef.current.length > 0) {
@@ -1065,7 +1061,7 @@ function GamePlay({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
       drawBackground(ctx, stageIndex)
-      drawObstacle(ctx)
+      drawObstacle(ctx, obstacle)
 
       for (const h of harpoonsRef.current) {
         drawHarpoon(ctx, h)
@@ -1156,6 +1152,7 @@ function GamePlay({
     return () => cancelAnimationFrame(rafId)
   }, [
     stageIndex,
+    obstacle,
     onClear,
     onGameOver,
     demo,

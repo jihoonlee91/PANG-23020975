@@ -7,6 +7,8 @@ import {
   LEVEL_BOUNCE_SPEED,
   LEVEL_RADIUS,
   PLAYER_Y,
+  STAGE_OBSTACLES,
+  getStageObstacle,
 } from './constants'
 import {
   createStage,
@@ -17,6 +19,7 @@ import {
   harpoonHitsBall,
   ballHitsPlayer,
   predictLandingSpot,
+  harpoonHitsObstacle,
 } from './engine'
 import type { Ball } from './types'
 
@@ -39,6 +42,31 @@ describe('createStage', () => {
     expect(createStage(6)).toHaveLength(7)
     expect(createStage(7)).toHaveLength(8)
     expect(createStage(20)).toHaveLength(8)
+  })
+})
+
+describe('stage obstacles', () => {
+  it('uses a distinct obstacle position for every stage', () => {
+    const positions = new Set(
+      STAGE_OBSTACLES.map((obstacle) => `${obstacle.x},${obstacle.y}`),
+    )
+
+    expect(positions.size).toBe(STAGE_OBSTACLES.length)
+  })
+
+  it('uses the selected stage obstacle for harpoon collision', () => {
+    const stageTwoObstacle = getStageObstacle(1)
+    const centerX = stageTwoObstacle.x + stageTwoObstacle.width / 2
+    const centerY = stageTwoObstacle.y + stageTwoObstacle.height / 2
+
+    expect(harpoonHitsObstacle(centerX, centerY, stageTwoObstacle)).toBe(true)
+    expect(
+      harpoonHitsObstacle(
+        getStageObstacle(0).x + getStageObstacle(0).width / 2,
+        centerY,
+        stageTwoObstacle,
+      ),
+    ).toBe(false)
   })
 })
 
