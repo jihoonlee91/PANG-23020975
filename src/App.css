@@ -867,6 +867,92 @@
   }
 }
 
+.gameplay-hud > .hud-buffs {
+  display: flex;
+  flex: 1 1 260px;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  min-height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  overflow: hidden;
+}
+
+.buff-timer {
+  --buff-color: #38bdf8;
+  display: inline-flex;
+  flex: 0 1 auto;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+  height: 32px;
+  padding: 4px 8px 4px 4px;
+  border: 1px solid color-mix(in srgb, var(--buff-color) 68%, white 12%);
+  border-radius: 9px;
+  color: #e0f2fe;
+  background: color-mix(in srgb, var(--buff-color) 18%, #07142f 82%);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--buff-color) 28%, transparent);
+  font-size: 10px;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.buff-timer-icon {
+  display: grid;
+  flex: 0 0 22px;
+  width: 22px;
+  height: 22px;
+  place-items: center;
+  border-radius: 6px;
+  color: #07142f;
+  background: var(--buff-color);
+  font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.48);
+}
+
+.buff-timer-name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.buff-timer strong {
+  color: #fff;
+  font-variant-numeric: tabular-nums;
+}
+
+@media (max-width: 900px) {
+  .buff-timer-name {
+    display: none;
+  }
+}
+
+@media (orientation: landscape) and (max-height: 500px) {
+  .gameplay-hud > .hud-buffs {
+    flex: 1 1 auto;
+    gap: 3px;
+    min-height: 26px;
+  }
+
+  .buff-timer {
+    flex: 0 1 46px;
+    gap: 3px;
+    height: 26px;
+    padding: 2px 5px 2px 2px;
+    border-radius: 7px;
+    font-size: 9px;
+  }
+
+  .buff-timer-icon {
+    flex-basis: 20px;
+    width: 20px;
+    height: 20px;
+    border-radius: 5px;
+  }
+}
+
 @media (orientation: landscape) and (max-height: 500px) {
   .stage-map-transition .stage-map-grid {
     grid-template-columns: repeat(5, minmax(100px, 1fr));

@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+  type CSSProperties,
+} from 'react'
 import {
   CANVAS_WIDTH,
   CANVAS_HEIGHT,
@@ -111,6 +117,14 @@ const BUFF_LABELS: Record<
   clock: 'Clock (Stop)',
   hourglass: 'Hourglass (Slow)',
 }
+
+const TIMED_BUFF_KEYS = [
+  'doubleWire',
+  'powerWire',
+  'vulcan',
+  'clock',
+  'hourglass',
+] as const
 
 const ITEM_ANNOUNCEMENTS: Record<ItemType, string> = {
   doubleWire: 'Double Wire!',
@@ -1182,6 +1196,38 @@ function GamePlay({
         </span>
         <span className="hud-score">Total Score {score}</span>
         <span className="hud-combo">Combo ×{comboRef.current}</span>
+        {(TIMED_BUFF_KEYS.some((key) => buffs[key] > 0) ||
+          buffs.barrier > 0) && (
+          <div className="hud-buffs" aria-label="Active item effects">
+            {TIMED_BUFF_KEYS.filter((key) => buffs[key] > 0).map((key) => (
+              <span
+                className="buff-timer"
+                style={{ '--buff-color': ITEM_COLORS[key] } as CSSProperties}
+                aria-label={`${BUFF_LABELS[key]} ${buffs[key]} seconds remaining`}
+                key={key}
+              >
+                <span className="buff-timer-icon" aria-hidden="true">
+                  {ITEM_LABELS[key]}
+                </span>
+                <span className="buff-timer-name">{BUFF_LABELS[key]}</span>
+                <strong>{buffs[key]}s</strong>
+              </span>
+            ))}
+            {buffs.barrier > 0 && (
+              <span
+                className="buff-timer"
+                style={{ '--buff-color': ITEM_COLORS.barrier } as CSSProperties}
+                aria-label={`Barrier ${buffs.barrier} remaining`}
+              >
+                <span className="buff-timer-icon" aria-hidden="true">
+                  {ITEM_LABELS.barrier}
+                </span>
+                <span className="buff-timer-name">Barrier</span>
+                <strong>×{buffs.barrier}</strong>
+              </span>
+            )}
+          </div>
+        )}
         {settings.showFps && <span className="hud-fps">{fps} FPS</span>}
         {demo && <span className="demo-badge">AI</span>}
         {!demo && (
@@ -1318,21 +1364,11 @@ function GamePlay({
           <div>
             <h3>Buffs</h3>
             <ul className="hint-list buff-list">
-              {(
-                [
-                  'doubleWire',
-                  'powerWire',
-                  'vulcan',
-                  'clock',
-                  'hourglass',
-                ] as const
-              )
-                .filter((key) => buffs[key] > 0)
-                .map((key) => (
-                  <li key={key}>
-                    {BUFF_LABELS[key]} {buffs[key]}s
-                  </li>
-                ))}
+              {TIMED_BUFF_KEYS.filter((key) => buffs[key] > 0).map((key) => (
+                <li key={key}>
+                  {BUFF_LABELS[key]} {buffs[key]}s
+                </li>
+              ))}
               {buffs.barrier > 0 && <li>Barrier x{buffs.barrier}</li>}
               {buffs.doubleWire === 0 &&
                 buffs.powerWire === 0 &&
