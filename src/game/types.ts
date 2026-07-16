@@ -10,6 +10,7 @@ export type Ball = {
 export type Harpoon = {
   x: number
   y: number
+  baseY?: number
   kind?: 'normal' | 'powerWire' | 'vulcan'
   expiresAt?: number
 }

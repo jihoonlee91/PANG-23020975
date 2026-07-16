@@ -401,6 +401,17 @@
   gap: 10px;
 }
 
+.touch-direction-column {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.touch-climb {
+  border-color: rgba(196, 181, 253, 0.9);
+  background: rgba(91, 33, 182, var(--touch-opacity));
+}
+
 .touch-button {
   width: var(--touch-size);
   height: var(--touch-size);
@@ -619,7 +630,7 @@
 
   .canvas-column {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) clamp(184px, 24vw, 224px);
+    grid-template-columns: minmax(0, 1fr) clamp(270px, 32vw, 300px);
     gap: 10px;
     width: 100%;
     height: 100%;
@@ -642,8 +653,8 @@
   }
 
   .touch-move {
-    flex-wrap: wrap;
-    width: var(--touch-size);
+    flex-wrap: nowrap;
+    width: auto;
     justify-content: center;
   }
 
@@ -1390,6 +1401,30 @@
     0 18px 36px rgba(2, 8, 23, 0.38),
     0 0 26px rgba(250, 204, 21, 0.2);
   transform: translateY(-5px);
+}
+
+.stage-map-card-button:disabled {
+  cursor: not-allowed;
+}
+
+.stage-map-card-locked {
+  opacity: 0.46;
+  filter: grayscale(0.9) brightness(0.62);
+}
+
+.stage-map-card-button:hover .stage-map-card-locked {
+  border-color: rgba(125, 211, 252, 0.12);
+  background: rgba(15, 23, 42, 0.46);
+  transform: none;
+}
+
+.stage-map-badge-locked {
+  top: 50%;
+  right: auto;
+  left: 50%;
+  padding: 7px 10px;
+  background: #0f172a;
+  transform: translate(-50%, -50%);
 }
 
 .screen-button:disabled {

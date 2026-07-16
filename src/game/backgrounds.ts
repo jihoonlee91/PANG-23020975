@@ -13,6 +13,16 @@ export const STAGE_NAMES = [
   'Eiffel Tower (France)',
   'Big Ben (UK)',
   'Red Square (Russia)',
+  'Neuschwanstein (Germany)',
+  'Colosseum (Italy)',
+  'Santorini (Greece)',
+  'Sagrada Familia (Spain)',
+  'Marrakesh (Morocco)',
+  'Serengeti (Tanzania)',
+  'Christ the Redeemer (Brazil)',
+  'Machu Picchu (Peru)',
+  'Grand Canyon (USA)',
+  'Aurora Village (Canada)',
 ]
 
 function drawSky(ctx: CanvasRenderingContext2D, top: string, bottom: string) {
@@ -441,7 +451,7 @@ function drawRedSquareBackground(ctx: CanvasRenderingContext2D) {
   drawGround(ctx, '#c9c2a8', '#a89e80')
 }
 
-export const BACKGROUNDS = [
+const BASE_BACKGROUNDS = [
   drawJapanBackground,
   drawGuilinBackground,
   drawEmeraldTempleBackground,
@@ -453,6 +463,33 @@ export const BACKGROUNDS = [
   drawBigBenBackground,
   drawRedSquareBackground,
 ]
+
+const NIGHT_TINTS = [
+  '#17255466',
+  '#134e4a55',
+  '#581c8755',
+  '#7c2d1255',
+  '#1e3a8a55',
+]
+
+const NIGHT_BACKGROUNDS = BASE_BACKGROUNDS.map(
+  (draw, index) => (ctx: CanvasRenderingContext2D) => {
+    draw(ctx)
+    ctx.save()
+    ctx.fillStyle = NIGHT_TINTS[index % NIGHT_TINTS.length]
+    ctx.fillRect(0, 0, CANVAS_WIDTH, GROUND_Y)
+    ctx.fillStyle = '#fffde8'
+    for (let star = 0; star < 18; star += 1) {
+      const x = (star * 137 + index * 71) % CANVAS_WIDTH
+      const y = 28 + ((star * 53 + index * 31) % 170)
+      ctx.globalAlpha = 0.35 + (star % 4) * 0.14
+      ctx.fillRect(x, y, 2, 2)
+    }
+    ctx.restore()
+  },
+)
+
+export const BACKGROUNDS = [...BASE_BACKGROUNDS, ...NIGHT_BACKGROUNDS]
 
 export function drawBackground(
   ctx: CanvasRenderingContext2D,

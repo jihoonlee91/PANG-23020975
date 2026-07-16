@@ -59,7 +59,7 @@ function reflectAway(
 export function stepBall(
   ball: Ball,
   dtSec: number,
-  obstacle: Obstacle = {
+  obstacles: Obstacle | readonly Obstacle[] = {
     x: OBSTACLE_X,
     y: OBSTACLE_Y,
     width: OBSTACLE_WIDTH,
@@ -90,26 +90,29 @@ export function stepBall(
     vy = reflect(vy, verticalBounceSpeed)
   }
 
-  if (
-    x + r > obstacle.x &&
-    x - r < obstacle.x + obstacle.width &&
-    y + r > obstacle.y &&
-    y - r < obstacle.y + obstacle.height
-  ) {
-    const fromTop = y < obstacle.y
-    const fromBottom = y > obstacle.y + obstacle.height
-    if (fromTop) {
-      y = obstacle.y - r
-      vy = reflectAway(vy, false, verticalBounceSpeed)
-    } else if (fromBottom) {
-      y = obstacle.y + obstacle.height + r
-      vy = reflectAway(vy, true, verticalBounceSpeed)
-    } else if (x < obstacle.x) {
-      x = obstacle.x - r
-      vx = reflectAway(vx, false)
-    } else {
-      x = obstacle.x + obstacle.width + r
-      vx = reflectAway(vx, true)
+  const platformList = Array.isArray(obstacles) ? obstacles : [obstacles]
+  for (const obstacle of platformList) {
+    if (
+      x + r > obstacle.x &&
+      x - r < obstacle.x + obstacle.width &&
+      y + r > obstacle.y &&
+      y - r < obstacle.y + obstacle.height
+    ) {
+      const fromTop = y < obstacle.y
+      const fromBottom = y > obstacle.y + obstacle.height
+      if (fromTop) {
+        y = obstacle.y - r
+        vy = reflectAway(vy, false, verticalBounceSpeed)
+      } else if (fromBottom) {
+        y = obstacle.y + obstacle.height + r
+        vy = reflectAway(vy, true, verticalBounceSpeed)
+      } else if (x < obstacle.x) {
+        x = obstacle.x - r
+        vx = reflectAway(vx, false)
+      } else {
+        x = obstacle.x + obstacle.width + r
+        vx = reflectAway(vx, true)
+      }
     }
   }
 
@@ -119,28 +122,38 @@ export function stepBall(
 export function harpoonHitsObstacle(
   harpoonX: number,
   harpoonY: number,
-  obstacle: Obstacle = {
+  obstacles: Obstacle | readonly Obstacle[] = {
     x: OBSTACLE_X,
     y: OBSTACLE_Y,
     width: OBSTACLE_WIDTH,
     height: OBSTACLE_HEIGHT,
   },
 ): boolean {
-  return (
-    harpoonX > obstacle.x &&
-    harpoonX < obstacle.x + obstacle.width &&
-    harpoonY > obstacle.y &&
-    harpoonY < obstacle.y + obstacle.height
+  const platformList = Array.isArray(obstacles) ? obstacles : [obstacles]
+  return platformList.some(
+    (obstacle) =>
+      harpoonX > obstacle.x &&
+      harpoonX < obstacle.x + obstacle.width &&
+      harpoonY > obstacle.y &&
+      harpoonY < obstacle.y + obstacle.height,
   )
 }
 
 export function getPowerHarpoonStopY(
   harpoonX: number,
-  obstacle: Obstacle,
+  obstacles: Obstacle | readonly Obstacle[],
+  harpoonBaseY = PLAYER_Y,
 ): number {
-  const crossesObstacle =
-    harpoonX > obstacle.x && harpoonX < obstacle.x + obstacle.width
-  return crossesObstacle ? obstacle.y + obstacle.height : 0
+  const platformList = Array.isArray(obstacles) ? obstacles : [obstacles]
+  const blockingBottoms = platformList
+    .filter(
+      (obstacle) =>
+        harpoonX > obstacle.x &&
+        harpoonX < obstacle.x + obstacle.width &&
+        obstacle.y + obstacle.height < harpoonBaseY,
+    )
+    .map((obstacle) => obstacle.y + obstacle.height)
+  return blockingBottoms.length > 0 ? Math.max(...blockingBottoms) : 0
 }
 
 export function splitBall(ball: Ball, nextId: () => number): Ball[] {
@@ -172,16 +185,17 @@ export function harpoonHitsBall(
   return dx * dx + dy * dy <= r * r
 }
 
-export function ballHitsPlayer(ball: Ball, playerX: number): boolean {
+export function ballHitsPlayer(
+  ball: Ball,
+  playerX: number,
+  playerY = PLAYER_Y,
+): boolean {
   const r = LEVEL_RADIUS[ball.level]
   const halfW = PLAYER_WIDTH / 2
   const halfH = PLAYER_HEIGHT / 2
 
   const closestX = Math.min(Math.max(ball.x, playerX - halfW), playerX + halfW)
-  const closestY = Math.min(
-    Math.max(ball.y, PLAYER_Y - halfH),
-    PLAYER_Y + halfH,
-  )
+  const closestY = Math.min(Math.max(ball.y, playerY - halfH), playerY + halfH)
 
   const dx = ball.x - closestX
   const dy = ball.y - closestY
@@ -233,15 +247,16 @@ export function stepItem(item: Item, dtSec: number): Item {
   return { ...item, y, vy }
 }
 
-export function itemHitsPlayer(item: Item, playerX: number): boolean {
+export function itemHitsPlayer(
+  item: Item,
+  playerX: number,
+  playerY = PLAYER_Y,
+): boolean {
   const halfW = PLAYER_WIDTH / 2
   const halfH = PLAYER_HEIGHT / 2
 
   const closestX = Math.min(Math.max(item.x, playerX - halfW), playerX + halfW)
-  const closestY = Math.min(
-    Math.max(item.y, PLAYER_Y - halfH),
-    PLAYER_Y + halfH,
-  )
+  const closestY = Math.min(Math.max(item.y, playerY - halfH), playerY + halfH)
 
   const dx = item.x - closestX
   const dy = item.y - closestY
@@ -259,7 +274,7 @@ export function predictLandingSpot(
   ball: Ball,
   horizonSec = 1.5,
   dtSec = 1 / 60,
-  obstacle?: Obstacle,
+  obstacles?: Obstacle | readonly Obstacle[],
 ): { x: number; time: number } {
   let sim = ball
   let bestX = ball.x
@@ -268,7 +283,7 @@ export function predictLandingSpot(
   let t = 0
 
   while (t < horizonSec) {
-    sim = stepBall(sim, dtSec, obstacle)
+    sim = stepBall(sim, dtSec, obstacles)
     t += dtSec
     if (sim.y > bestY) {
       bestY = sim.y

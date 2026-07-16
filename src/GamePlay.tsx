@@ -22,7 +22,6 @@ import {
   STAGE_COUNT,
   STAGE_TIME_SECONDS,
   TIME_BONUS_PER_SECOND,
-  getStageObstacle,
   ITEM_RADIUS,
   MAX_HARPOONS_DEFAULT,
   MAX_HARPOONS_DOUBLE_WIRE,
@@ -42,6 +41,11 @@ import {
   SCORE_BONUS_POINTS,
 } from './game/constants'
 import type { Obstacle } from './game/constants'
+import {
+  getStageTerrain,
+  stepPlayerOnTerrain,
+  type Ladder,
+} from './game/terrain'
 import {
   createStage,
   stepBall,
@@ -81,6 +85,7 @@ const BALL_COLORS = ['#fb7185', '#facc15', '#38bdf8']
 
 const HINTS = [
   '← → or A / D: move',
+  '↑ ↓ or W / S: climb when aligned with a ladder',
   'Space: fire (only 1 harpoon by default, 2 with double wire)',
   'Hitting a ball shrinks and splits it in two; hitting the smallest removes it',
   'The striped platform blocks harpoons and bounces balls off',
@@ -249,6 +254,29 @@ function drawObstacle(ctx: CanvasRenderingContext2D, obstacle: Obstacle) {
   ctx.strokeRect(x, y, width, height)
 }
 
+function drawLadder(ctx: CanvasRenderingContext2D, ladder: Ladder) {
+  const left = ladder.x - ladder.width / 2
+  const right = ladder.x + ladder.width / 2
+  ctx.save()
+  ctx.strokeStyle = '#5b3a1f'
+  ctx.lineWidth = 6
+  ctx.beginPath()
+  ctx.moveTo(left, ladder.topY)
+  ctx.lineTo(left, ladder.bottomY)
+  ctx.moveTo(right, ladder.topY)
+  ctx.lineTo(right, ladder.bottomY)
+  ctx.stroke()
+  ctx.strokeStyle = '#d6a45f'
+  ctx.lineWidth = 3
+  for (let y = ladder.topY + 10; y < ladder.bottomY; y += 22) {
+    ctx.beginPath()
+    ctx.moveTo(left, y)
+    ctx.lineTo(right, y)
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
 function drawHarpoon(ctx: CanvasRenderingContext2D, harpoon: Harpoon) {
   if (harpoon.kind === 'vulcan') {
     ctx.save()
@@ -268,7 +296,8 @@ function drawHarpoon(ctx: CanvasRenderingContext2D, harpoon: Harpoon) {
     return
   }
 
-  const ropeTop = Math.min(PLAYER_Y, harpoon.y + 16)
+  const baseY = harpoon.baseY ?? PLAYER_Y
+  const ropeTop = Math.min(baseY, harpoon.y + 16)
   const isPowerWire = harpoon.kind === 'powerWire'
 
   ctx.save()
@@ -280,7 +309,7 @@ function drawHarpoon(ctx: CanvasRenderingContext2D, harpoon: Harpoon) {
   ctx.strokeStyle = isPowerWire ? '#14532d' : '#3f2d20'
   ctx.lineWidth = 5
   ctx.beginPath()
-  ctx.moveTo(harpoon.x, PLAYER_Y)
+  ctx.moveTo(harpoon.x, baseY)
   ctx.lineTo(harpoon.x, ropeTop)
   ctx.stroke()
 
@@ -290,13 +319,13 @@ function drawHarpoon(ctx: CanvasRenderingContext2D, harpoon: Harpoon) {
   ctx.setLineDash([5, 4])
   ctx.strokeStyle = isPowerWire ? '#bbf7d0' : '#e7c58d'
   ctx.beginPath()
-  ctx.moveTo(harpoon.x - 1, PLAYER_Y)
+  ctx.moveTo(harpoon.x - 1, baseY)
   ctx.lineTo(harpoon.x - 1, ropeTop)
   ctx.stroke()
   ctx.lineDashOffset = 4.5
   ctx.strokeStyle = isPowerWire ? '#22c55e' : '#9a6a3a'
   ctx.beginPath()
-  ctx.moveTo(harpoon.x + 1, PLAYER_Y)
+  ctx.moveTo(harpoon.x + 1, baseY)
   ctx.lineTo(harpoon.x + 1, ropeTop)
   ctx.stroke()
   ctx.setLineDash([])
@@ -438,9 +467,10 @@ function GamePlay({
   settings,
   onQuit,
 }: Props) {
-  const obstacle = getStageObstacle(stageIndex)
+  const terrain = getStageTerrain(stageIndex)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   const playerXRef = useRef(CANVAS_WIDTH / 2)
+  const playerYRef = useRef(PLAYER_Y)
   const ballsRef = useRef<Ball[]>(createStage(stageIndex))
   const harpoonsRef = useRef<Harpoon[]>([])
   const itemsRef = useRef<Item[]>([])
@@ -515,6 +545,7 @@ function GamePlay({
       invincibleUntilRef.current = 0
       barrierCountRef.current = 0
       playerXRef.current = CANVAS_WIDTH / 2
+      playerYRef.current = PLAYER_Y
       inputRef.current.releaseAll()
       dragRef.current = null
       dragTargetXRef.current = null
@@ -598,6 +629,14 @@ function GamePlay({
         inputRef.current.set('keyboard-left', 'left', true)
       if (key === 'arrowright' || key === 'd')
         inputRef.current.set('keyboard-right', 'right', true)
+      if (key === 'arrowup' || key === 'w') {
+        e.preventDefault()
+        inputRef.current.set('keyboard-up', 'up', true)
+      }
+      if (key === 'arrowdown' || key === 's') {
+        e.preventDefault()
+        inputRef.current.set('keyboard-down', 'down', true)
+      }
       if (key === ' ') {
         e.preventDefault()
         inputRef.current.set('keyboard-fire', 'fire', true)
@@ -609,6 +648,10 @@ function GamePlay({
         inputRef.current.release('keyboard-left')
       if (key === 'arrowright' || key === 'd')
         inputRef.current.release('keyboard-right')
+      if (key === 'arrowup' || key === 'w')
+        inputRef.current.release('keyboard-up')
+      if (key === 'arrowdown' || key === 's')
+        inputRef.current.release('keyboard-down')
       if (key === ' ') inputRef.current.release('keyboard-fire')
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -749,7 +792,12 @@ function GamePlay({
               x: number
               time: number
             } | null>((best, b) => {
-              const { x, time } = predictLandingSpot(b, 1.5, 1 / 60, obstacle)
+              const { x, time } = predictLandingSpot(
+                b,
+                1.5,
+                1 / 60,
+                terrain.platforms,
+              )
               return !best || time < best.time ? { ball: b, x, time } : best
             }, null)
             const target = prediction?.ball ?? null
@@ -790,21 +838,38 @@ function GamePlay({
           }
 
           const keys = inputRef.current.snapshot()
-          let vx = 0
-          if (keys.left) vx -= playerSpeed
-          if (keys.right) vx += playerSpeed
-          playerXRef.current = Math.min(
-            Math.max(playerXRef.current + vx * dtSec, PLAYER_WIDTH / 2),
-            CANVAS_WIDTH - PLAYER_WIDTH / 2,
+          const nextPlayerPosition = stepPlayerOnTerrain(
+            playerXRef.current,
+            playerYRef.current,
+            keys,
+            dtSec,
+            playerSpeed,
+            terrain,
           )
+          playerXRef.current = nextPlayerPosition.x
+          playerYRef.current = nextPlayerPosition.y
 
           if (dragTargetXRef.current !== null) {
             const diff = dragTargetXRef.current - playerXRef.current
             const maxStep = playerSpeed * dtSec
-            playerXRef.current =
+            const dragX =
               Math.abs(diff) <= maxStep
                 ? dragTargetXRef.current
                 : playerXRef.current + Math.sign(diff) * maxStep
+            const draggedPosition = stepPlayerOnTerrain(
+              playerXRef.current,
+              playerYRef.current,
+              {
+                left: dragX < playerXRef.current,
+                right: dragX > playerXRef.current,
+                up: false,
+                down: false,
+              },
+              Math.abs(dragX - playerXRef.current) / playerSpeed,
+              playerSpeed,
+              terrain,
+            )
+            playerXRef.current = draggedPosition.x
           }
 
           const wantsToFire =
@@ -822,13 +887,19 @@ function GamePlay({
             const newHarpoon: Harpoon = isPowerWireActive
               ? {
                   x: playerXRef.current,
-                  y: getPowerHarpoonStopY(playerXRef.current, obstacle),
+                  y: getPowerHarpoonStopY(
+                    playerXRef.current,
+                    terrain.platforms,
+                    playerYRef.current,
+                  ),
+                  baseY: playerYRef.current,
                   kind: 'powerWire',
                   expiresAt: time + POWER_WIRE_STAY_MS,
                 }
               : {
                   x: playerXRef.current,
-                  y: PLAYER_Y,
+                  y: playerYRef.current,
+                  baseY: playerYRef.current,
                   kind: isVulcanActive ? 'vulcan' : 'normal',
                 }
             harpoonsRef.current = [...harpoonsRef.current, newHarpoon]
@@ -849,7 +920,7 @@ function GamePlay({
               }
               return (
                 harpoon.y > 0 &&
-                !harpoonHitsObstacle(harpoon.x, harpoon.y, obstacle)
+                !harpoonHitsObstacle(harpoon.x, harpoon.y, terrain.platforms)
               )
             })
 
@@ -858,7 +929,7 @@ function GamePlay({
               ? dtSec * HOURGLASS_SLOW_FACTOR
               : dtSec
             ballsRef.current = ballsRef.current.map((b) =>
-              stepBall(b, ballDt, obstacle),
+              stepBall(b, ballDt, terrain.platforms),
             )
           }
 
@@ -870,7 +941,7 @@ function GamePlay({
                   h.x,
                   h.y,
                   b,
-                  h.kind === 'vulcan' ? h.y : PLAYER_Y,
+                  h.kind === 'vulcan' ? h.y : (h.baseY ?? PLAYER_Y),
                 ),
               )
               if (hitIndex === -1) {
@@ -940,7 +1011,7 @@ function GamePlay({
             time >= invulnUntilRef.current
           ) {
             const hit = ballsRef.current.some((b) =>
-              ballHitsPlayer(b, playerXRef.current),
+              ballHitsPlayer(b, playerXRef.current, playerYRef.current),
             )
             if (hit) {
               invulnUntilRef.current = time + INVULN_MS
@@ -966,7 +1037,7 @@ function GamePlay({
             .filter((item) => item.y - ITEM_RADIUS < CANVAS_HEIGHT)
 
           const pickupIndex = itemsRef.current.findIndex((item) =>
-            itemHitsPlayer(item, playerXRef.current),
+            itemHitsPlayer(item, playerXRef.current, playerYRef.current),
           )
           if (pickupIndex !== -1) {
             const picked = itemsRef.current[pickupIndex]
@@ -1149,7 +1220,8 @@ function GamePlay({
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0)
       ctx.clearRect(0, 0, CANVAS_WIDTH, CANVAS_HEIGHT)
       drawBackground(ctx, stageIndex)
-      drawObstacle(ctx, obstacle)
+      for (const ladder of terrain.ladders) drawLadder(ctx, ladder)
+      for (const platform of terrain.platforms) drawObstacle(ctx, platform)
 
       for (const h of harpoonsRef.current) {
         drawHarpoon(ctx, h)
@@ -1175,11 +1247,12 @@ function GamePlay({
 
       const isInvuln =
         time < invulnUntilRef.current || time < invincibleUntilRef.current
+      const playerY = playerYRef.current
       const playerGradient = ctx.createLinearGradient(
         0,
-        PLAYER_Y - PLAYER_HEIGHT / 2,
+        playerY - PLAYER_HEIGHT / 2,
         0,
-        PLAYER_Y + PLAYER_HEIGHT / 2,
+        playerY + PLAYER_HEIGHT / 2,
       )
       playerGradient.addColorStop(0, isInvuln ? '#fef08a' : '#f87171')
       playerGradient.addColorStop(1, isInvuln ? '#fbbf24' : '#b91c1c')
@@ -1191,7 +1264,7 @@ function GamePlay({
       }
 
       const px = playerXRef.current - PLAYER_WIDTH / 2
-      const py = PLAYER_Y - PLAYER_HEIGHT / 2
+      const py = playerY - PLAYER_HEIGHT / 2
 
       ctx.fillStyle = '#374151'
       ctx.fillRect(playerXRef.current - 4, py - 16, 8, 16)
@@ -1241,7 +1314,7 @@ function GamePlay({
     return () => cancelAnimationFrame(rafId)
   }, [
     stageIndex,
-    obstacle,
+    terrain,
     onClear,
     onGameOver,
     demo,
@@ -1369,7 +1442,7 @@ function GamePlay({
         <div className="canvas-column">
           <canvas
             ref={canvasRef}
-            aria-label="PANG game field. Move left and right and fire harpoons to pop every ball."
+            aria-label="PANG game field. Move left and right, climb ladders, and fire harpoons to pop every ball."
             style={{ border: '1px solid #2e303a', touchAction: 'none' }}
             onPointerDown={(e) => {
               if (demo || paused) return

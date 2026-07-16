@@ -37,6 +37,7 @@ type Props = {
   onAction?: () => void
   compact?: boolean
   onStartStage?: (stageIndex: number) => void
+  highestUnlockedStage?: number
 }
 
 function StageMap({
@@ -49,8 +50,16 @@ function StageMap({
   onAction,
   compact = false,
   onStartStage,
+  highestUnlockedStage = STAGE_COUNT - 1,
 }: Props) {
   const [selectedStage, setSelectedStage] = useState<number | null>(null)
+  const currentCardRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (compact && currentCardRef.current) {
+      currentCardRef.current.scrollIntoView({ block: 'center' })
+    }
+  }, [compact, currentStage])
 
   return (
     <div
@@ -61,7 +70,7 @@ function StageMap({
       {onStartStage && (
         <p className="stage-map-status">
           {selectedStage === null
-            ? 'Choose a stage to start'
+            ? `Choose a stage to start · ${highestUnlockedStage + 1} / ${STAGE_COUNT} unlocked`
             : `Stage ${selectedStage + 1} selected`}
         </p>
       )}
@@ -70,9 +79,11 @@ function StageMap({
           const isCurrent = i === currentStage
           const isNext = i === nextStage
           const isCleared = currentStage !== undefined && i < currentStage
+          const isLocked = Boolean(onStartStage) && i > highestUnlockedStage
           const card = (
             <div
-              className={`stage-map-card ${isCleared ? 'stage-map-card-cleared' : ''} ${isCurrent ? 'stage-map-card-current' : ''} ${isNext ? 'stage-map-card-next' : ''} ${selectedStage === i ? 'stage-map-card-selected' : ''}`}
+              className={`stage-map-card ${isCleared ? 'stage-map-card-cleared' : ''} ${isCurrent ? 'stage-map-card-current' : ''} ${isNext ? 'stage-map-card-next' : ''} ${selectedStage === i ? 'stage-map-card-selected' : ''} ${isLocked ? 'stage-map-card-locked' : ''}`}
+              ref={isCurrent ? currentCardRef : undefined}
               aria-current={isCurrent ? 'step' : undefined}
             >
               <div className="stage-thumb-wrap">
@@ -88,6 +99,11 @@ function StageMap({
                     NEXT
                   </span>
                 )}
+                {isLocked && (
+                  <span className="stage-map-badge stage-map-badge-locked">
+                    LOCKED
+                  </span>
+                )}
               </div>
               <p>
                 {i + 1}. {STAGE_NAMES[i % STAGE_NAMES.length]}
@@ -100,7 +116,10 @@ function StageMap({
               type="button"
               className="stage-map-card-button"
               aria-pressed={selectedStage === i}
-              onClick={() => setSelectedStage(i)}
+              disabled={isLocked}
+              onClick={() => {
+                if (!isLocked) setSelectedStage(i)
+              }}
               key={i}
             >
               {card}

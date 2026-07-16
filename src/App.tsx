@@ -9,6 +9,7 @@ import type { ScoreEntry } from './game/scoreHistory'
 import SettingsDialog from './components/SettingsDialog'
 import { loadSettings, saveSettings, type GameSettings } from './game/settings'
 import { configureAudio, startBgm, stopBgm, unlockAudio } from './game/audio'
+import { getHighestUnlockedStage, unlockStage } from './game/progress'
 
 type Screen =
   | 'main'
@@ -26,12 +27,13 @@ const STAGE_ADVANCE_COUNTDOWN = 5
 const TUTORIAL_KEY = 'pang.tutorial.complete.v1'
 const TUTORIAL_STEPS = [
   'Hold the left and right controls to move.',
+  'Use Up and Down near a ladder to climb between platforms.',
   'Press FIRE or Space to launch a harpoon.',
   'Pop every ball. Large balls split into smaller ones.',
   'Avoid the balls: contact costs one HP.',
 ]
 const CONTROLS_SUMMARY =
-  'Move: ←/→ or A/D · Fire: Space · Touch: drag to move, tap to fire'
+  'Move: ←/→ or A/D · Climb: ↑/↓ or W/S · Fire: Space · Touch controls supported'
 
 function App() {
   const [screen, setScreen] = useState<Screen>('main')
@@ -47,6 +49,9 @@ function App() {
   const [tutorialStep, setTutorialStep] = useState(0)
   const [stageAdvanceCountdown, setStageAdvanceCountdown] = useState(
     STAGE_ADVANCE_COUNTDOWN,
+  )
+  const [highestUnlockedStage, setHighestUnlockedStage] = useState(
+    getHighestUnlockedStage,
   )
 
   useEffect(() => {
@@ -117,6 +122,7 @@ function App() {
   }
 
   const startAtStage = (selectedStage: number) => {
+    if (selectedStage > highestUnlockedStage) return
     unlockAudio()
     setStageIndex(selectedStage)
     setFinalScore(0)
@@ -172,6 +178,7 @@ function App() {
 
   const handleClear = (score: number) => {
     if (stageIndex + 1 < STAGE_COUNT) {
+      setHighestUnlockedStage(unlockStage(stageIndex + 1))
       setFinalScore(score)
       setStageAdvanceCountdown(STAGE_ADVANCE_COUNTDOWN)
       setScreen('stageClear')
@@ -292,7 +299,11 @@ function App() {
 
   if (screen === 'map') {
     return (
-      <StageMap onBack={() => setScreen('main')} onStartStage={startAtStage} />
+      <StageMap
+        onBack={() => setScreen('main')}
+        onStartStage={startAtStage}
+        highestUnlockedStage={highestUnlockedStage}
+      />
     )
   }
 
@@ -323,8 +334,10 @@ function App() {
           {tutorialStep === 0
             ? '◀  ▶'
             : tutorialStep === 1
-              ? 'FIRE'
-              : '●  →  • •'}
+              ? '▲  ▼'
+              : tutorialStep === 2
+                ? 'FIRE'
+                : '●  →  • •'}
         </div>
         <button
           type="button"

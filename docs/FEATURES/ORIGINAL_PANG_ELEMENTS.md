@@ -8,10 +8,12 @@ This implementation keeps the existing mobile-friendly HP system while restoring
 - Double Wire, Clock, Hourglass, Barrier, 1UP, and Dynamite remain available. Picking up a weapon replaces the previous weapon mode.
 - Speed Boost (`S`) increases movement speed by 60% for 10 seconds, while Invincible (`I`) prevents collision damage for 8 seconds.
 - Time Plus (`T`) immediately adds 15 seconds and Score Bonus (`$`) immediately adds 1,000 points to the cumulative run score.
+- The world tour now contains 20 stages. Every stage combines multiple platforms with climbable ladders, and the second half uses night variants of the world backgrounds.
+- Stage Select only enables stages the player has reached. Clearing a stage permanently unlocks the next one in the browser profile.
 
 Reference behavior was compared against descriptions and screenshots for the original _Pang / Buster Bros._, including its persistent power wire, rapid-fire gun, time pressure, destructible/permanent barriers, ladders, and two-player mode.
 
-Deferred structural work: stage-specific destructible blocks, ladders and elevated player movement, hidden bonuses, and local two-player co-op. These require a stage collision-map format rather than another conditional in `GamePlay.tsx`.
+Deferred structural work: destructible blocks, hidden bonuses, and local two-player co-op. These require additional object-state and multiplayer synchronization systems.
 
 Sources:
 

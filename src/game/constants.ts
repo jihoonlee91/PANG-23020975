@@ -7,6 +7,7 @@ export const PLAYER_WIDTH = 40
 export const PLAYER_HEIGHT = 16
 export const PLAYER_Y = CANVAS_HEIGHT - 30
 export const PLAYER_SPEED = 300
+export const PLAYER_CLIMB_SPEED = 210
 
 export const HARPOON_SPEED = 700
 export const VULCAN_SPEED = 1050
@@ -28,7 +29,7 @@ export const SCORE_BY_LEVEL = [300, 150, 100]
 
 export const COMBO_WINDOW_MS = 1500
 
-export const STAGE_COUNT = 10
+export const STAGE_COUNT = 20
 export const STAGE_TIME_SECONDS = 90
 export const TIME_BONUS_PER_SECOND = 10
 
@@ -50,6 +51,16 @@ export const STAGE_OBSTACLES: readonly Obstacle[] = [
   { x: 180, y: 350, width: 160, height: 18 },
   { x: 700, y: 310, width: 150, height: 18 },
   { x: 380, y: 170, width: 200, height: 18 },
+  { x: 90, y: 240, width: 210, height: 18 },
+  { x: 610, y: 260, width: 240, height: 18 },
+  { x: 310, y: 320, width: 180, height: 18 },
+  { x: 40, y: 180, width: 190, height: 18 },
+  { x: 720, y: 210, width: 180, height: 18 },
+  { x: 250, y: 250, width: 260, height: 18 },
+  { x: 560, y: 350, width: 230, height: 18 },
+  { x: 120, y: 330, width: 170, height: 18 },
+  { x: 640, y: 160, width: 210, height: 18 },
+  { x: 360, y: 290, width: 240, height: 18 },
 ]
 
 export function getStageObstacle(stageIndex: number): Obstacle {
