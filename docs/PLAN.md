@@ -110,3 +110,10 @@ A file laying out the goals for each phase.
 
 - Add the final 10 stages themed as deep space, with a new "gravity
   well" hazard that pulls balls toward a fixed point
+
+## Phase 6. Live Ops & Post-Launch Polish
+
+### Phase 6-1. Release Notes
+
+- Show a "What's New" screen from Settings summarizing recent version
+  changes, since the version number is already surfaced in-game
