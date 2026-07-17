@@ -2226,7 +2226,7 @@ function GamePlay({
         <div className="canvas-column">
           <canvas
             ref={canvasRef}
-            aria-label="PANG game field. Move left and right and fire harpoons to pop every ball."
+            aria-label="Orbit game field. Move left and right and fire harpoons to pop every ball."
             style={{ border: '1px solid #2e303a', touchAction: 'none' }}
             onPointerDown={(e) => {
               if (demo || paused || isStarting) return

@@ -97,6 +97,10 @@ export default function SettingsDialog({
       >
         Replay Tutorial
       </button>
+      <p className="disclaimer">
+        This is an independent game and is not affiliated with or endorsed by
+        the owners of Pang or Buster Bros.
+      </p>
     </div>
   )
 }

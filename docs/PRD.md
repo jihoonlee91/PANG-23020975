@@ -1,8 +1,8 @@
-# PANG Game PRD
+# Orbit Game PRD
 
 ## 1. Overview
 
-- **Project name**: PANG
+- **Project name**: Orbit
 - **Genre**: Casual arcade (classic "Pang"-style game where you split and remove balls by hitting them)
 
 ## 2. Core Gameplay

@@ -306,7 +306,7 @@ function App() {
           <span />
         </div>
         <p className="main-kicker">Classic World Tour • 1 Player</p>
-        <h1>PANG</h1>
+        <h1>ORBIT</h1>
         <p className="main-tagline">Pop • Split • Clear the Stage</p>
         <p className="controls-summary main-controls">{CONTROLS_SUMMARY}</p>
         <div className="main-actions">

@@ -43,7 +43,7 @@ export const STAGE_NAMES = [
   'Plasma Ocean (Dimension X)',
   'Clockwork Nebula (Dimension X)',
   'Singularity Gate (Dimension X)',
-  'Pang Core (Dimension X)',
+  'Orbit Core (Dimension X)',
   'Kelp Gate (The Trench)',
   'Bioluminescent Shoal (The Trench)',
   'Sunken Galleon (The Trench)',
@@ -63,7 +63,7 @@ export const STAGE_NAMES = [
   'Nova Remnant (Stellar Forge)',
   'Event Horizon (Stellar Forge)',
   'The Last Forge (Stellar Forge)',
-  'Pang Star (Stellar Forge)',
+  'Orbit Star (Stellar Forge)',
 ]
 
 function drawSky(ctx: CanvasRenderingContext2D, top: string, bottom: string) {

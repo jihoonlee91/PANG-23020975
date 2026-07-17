@@ -1,11 +1,11 @@
 {
-  "name": "PANG World Tour",
-  "short_name": "PANG",
+  "name": "Orbit World Tour",
+  "short_name": "Orbit",
   "description": "A responsive canvas arcade game",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
-  "orientation": "landscape",
+  "orientation": "any",
   "theme_color": "#0ea5e9",
   "background_color": "#7dc8f0",
   "icons": [

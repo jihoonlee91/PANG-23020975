@@ -1,6 +1,8 @@
-# PANG
+# Orbit
 
-A classic "Pang" / Buster Bros-style arcade game. Hit the balls on screen with your harpoon to keep splitting them into smaller balls, and clear the stage once they're all gone.
+An original arcade game where players split bouncing orbs with vertical shots. Hit the balls on screen with your harpoon to keep splitting them into smaller balls, and clear the stage once they're all gone.
+
+> This is an independent game and is not affiliated with or endorsed by the owners of Pang or Buster Bros.
 
 ## Play Now
 
