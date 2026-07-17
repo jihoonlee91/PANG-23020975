@@ -627,7 +627,8 @@
 }
 
 .tutorial-actions,
-.settings-actions {
+.settings-actions,
+.whats-new-actions {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -1659,8 +1660,51 @@
 .settings-screen,
 .tutorial-screen,
 .result-screen,
-.milestone-screen {
+.milestone-screen,
+.whats-new-screen {
   width: min(560px, 100%);
+}
+
+.whats-new-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-height: min(60vh, 420px);
+  overflow-y: auto;
+  padding-right: 2px;
+}
+
+.whats-new-entry {
+  width: 100%;
+  padding: 12px 14px;
+  border: 1px solid rgba(125, 211, 252, 0.14);
+  border-radius: 12px;
+  color: #e2e8f0;
+  background: rgba(2, 8, 23, 0.28);
+  text-align: left;
+}
+
+.whats-new-entry h2 {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin: 0 0 6px;
+  color: #67e8f9;
+  font-size: var(--fs-sm);
+}
+
+.whats-new-date {
+  color: #94a3b8;
+  font-size: var(--fs-xs);
+  font-weight: 400;
+}
+
+.whats-new-entry ul {
+  margin: 0;
+  padding-left: 18px;
+  font-size: var(--fs-xs);
+  line-height: 1.5;
 }
 
 .milestone-seal {
@@ -1694,7 +1738,8 @@
 @media (orientation: landscape) and (max-height: 500px) {
   .result-screen,
   .milestone-screen,
-  .tutorial-screen {
+  .tutorial-screen,
+  .whats-new-screen {
     padding: 16px 20px;
     gap: 8px;
   }
@@ -1710,6 +1755,10 @@
     font-size: 10px;
   }
 
+  .whats-new-list {
+    max-height: min(40vh, 220px);
+  }
+
   .tutorial-controls {
     min-width: 0;
     padding: 10px 20px;
@@ -1719,7 +1768,8 @@
 
   .result-actions,
   .tutorial-actions,
-  .settings-actions {
+  .settings-actions,
+  .whats-new-actions {
     position: sticky;
     bottom: -16px;
     flex-direction: row;
@@ -1732,7 +1782,8 @@
 
   .result-actions .screen-button,
   .tutorial-actions .screen-button,
-  .settings-actions .screen-button {
+  .settings-actions .screen-button,
+  .whats-new-actions .screen-button {
     flex: 1;
     padding: 10px 12px;
   }

@@ -7,6 +7,7 @@ import type { StageResult } from './game/types'
 import { getPlayerName, recordScore, renameEntry } from './game/scoreHistory'
 import type { ScoreEntry } from './game/scoreHistory'
 import SettingsDialog from './components/SettingsDialog'
+import WhatsNewDialog from './components/WhatsNewDialog'
 import { loadSettings, saveSettings, type GameSettings } from './game/settings'
 import {
   configureAudio,
@@ -28,13 +29,14 @@ type Screen =
   | 'demo'
   | 'map'
   | 'settings'
+  | 'whatsNew'
   | 'end'
 
 const MILESTONE_INTERVAL = 10
 
-// Screens with a simple "back to main" meaning for Esc/the Android back
-// button. 'play'/'stageClear' are deliberately excluded — GamePlay owns
-// Escape there (it toggles pause); 'main'/'countdown'/'milestone' have no
+// Screens with a simple "back" meaning for Esc/the Android back button.
+// 'play'/'stageClear' are deliberately excluded — GamePlay owns Escape
+// there (it toggles pause); 'main'/'countdown'/'milestone' have no
 // sensible back target.
 const BACK_TO_MAIN_SCREENS: readonly Screen[] = [
   'tutorial',
@@ -42,7 +44,14 @@ const BACK_TO_MAIN_SCREENS: readonly Screen[] = [
   'map',
   'demo',
   'end',
+  'whatsNew',
 ]
+
+// Most back-to-main screens really do go to 'main'; 'whatsNew' is opened
+// from Settings and should return there instead.
+const SCREEN_BACK_TARGET: Partial<Record<Screen, Screen>> = {
+  whatsNew: 'settings',
+}
 
 const COUNTDOWN_START = 3
 const STAGE_ADVANCE_COUNTDOWN = 5
@@ -400,7 +409,7 @@ function App() {
       if (event.key !== 'Escape' || event.repeat) return
       if (BACK_TO_MAIN_SCREENS.includes(screen)) {
         event.preventDefault()
-        setScreen('main')
+        setScreen(SCREEN_BACK_TARGET[screen] ?? 'main')
       }
       // 'play'/'stageClear' already handle Escape themselves (pause toggle).
     }
@@ -417,7 +426,7 @@ function App() {
   useEffect(() => {
     const handlePopState = () => {
       if (BACK_TO_MAIN_SCREENS.includes(screen)) {
-        setScreen('main')
+        setScreen(SCREEN_BACK_TARGET[screen] ?? 'main')
       } else if (screen === 'play' || screen === 'stageClear') {
         // No real keydown fires for a hardware back gesture — synthesize
         // the Escape GamePlay already listens for, to pause instead of
@@ -518,9 +527,14 @@ function App() {
           setTutorialStep(0)
           setScreen('tutorial')
         }}
+        onShowWhatsNew={() => setScreen('whatsNew')}
         manualInstallHint={manualInstallHint}
       />
     )
+  }
+
+  if (screen === 'whatsNew') {
+    return <WhatsNewDialog onBack={() => setScreen('settings')} />
   }
 
   if (screen === 'tutorial') {

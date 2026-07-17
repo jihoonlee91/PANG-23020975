@@ -7,6 +7,7 @@ type Props = {
   onChange: (settings: GameSettings) => void
   onClose: () => void
   onReplayTutorial: () => void
+  onShowWhatsNew: () => void
   manualInstallHint: string | null
 }
 
@@ -15,6 +16,7 @@ export default function SettingsDialog({
   onChange,
   onClose,
   onReplayTutorial,
+  onShowWhatsNew,
   manualInstallHint,
 }: Props) {
   const update = <K extends keyof GameSettings>(
@@ -111,6 +113,13 @@ export default function SettingsDialog({
           Replay Tutorial
         </button>
       </div>
+      <button
+        type="button"
+        className="screen-button screen-button-secondary"
+        onClick={onShowWhatsNew}
+      >
+        What's New
+      </button>
       <button
         type="button"
         className="screen-button screen-button-secondary"
