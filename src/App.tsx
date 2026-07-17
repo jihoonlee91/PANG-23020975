@@ -133,14 +133,20 @@ function App() {
   // beforeinstallprompt, so it needs the same manual-instructions fallback
   // as iOS Safari, just pointed at its own menu instead of the Share sheet.
   const isSamsungInternet = /SamsungBrowser/i.test(navigator.userAgent)
+  // Firefox never supports beforeinstallprompt at all, on any platform.
+  const isFirefox = /Firefox/i.test(navigator.userAgent)
   const manualInstallHint =
     installPromptEvent || isStandalone
       ? null
       : isIos
-        ? 'To install: tap Share, then "Add to Home Screen".'
+        ? // iOS's only real install path is Safari's Share sheet — every
+          // browser there runs on WebKit, so Chrome wouldn't help.
+          'To install: tap Share, then "Add to Home Screen".'
         : isSamsungInternet
-          ? 'To install: open the browser menu, then "Add page to" → "Home screen".'
-          : null
+          ? 'To install: open the browser menu, then "Add page to" → "Home screen". For the easiest setup, we recommend using Chrome instead.'
+          : isFirefox
+            ? "This browser doesn't support one-tap app install. For the easiest setup, we recommend using Chrome."
+            : null
 
   const [updateAvailable, setUpdateAvailable] = useState(false)
 
