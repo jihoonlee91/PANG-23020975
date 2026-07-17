@@ -9,6 +9,13 @@ export type ReleaseNote = {
 // recent releases are kept; older entries can be dropped.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.13.0',
+    date: '2026-07-17',
+    notes: [
+      '10 new stages! Cosmic Frontier (51-60) travels outward from the solar system through the galaxy into deep space, ending on a Hellfire finale.',
+    ],
+  },
+  {
     version: '1.12.1',
     date: '2026-07-17',
     notes: [
@@ -48,12 +55,5 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     version: '1.8.0',
     date: '2026-07-17',
     notes: ['Added this "What\'s New" screen, in Settings.'],
-  },
-  {
-    version: '1.7.2',
-    date: '2026-07-17',
-    notes: [
-      'Browsers with weak install support (Samsung Internet, Firefox) now suggest switching to Chrome for the smoothest setup.',
-    ],
   },
 ]

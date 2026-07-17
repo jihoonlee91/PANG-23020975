@@ -64,6 +64,16 @@ export const STAGE_NAMES = [
   'Event Horizon (Stellar Forge)',
   'The Last Forge (Stellar Forge)',
   'Orbit Star (Stellar Forge)',
+  'Inner Orbit (Solar System)',
+  'Asteroid Belt (Solar System)',
+  'Ringed Giant (Solar System)',
+  'Spiral Arm (Galaxy)',
+  'Star Nursery (Galaxy)',
+  'Galactic Core (Galaxy)',
+  'Silent Void (Deep Space)',
+  'Dark Expanse (Deep Space)',
+  'Edge of Everything (Deep Space)',
+  'Hellfire Core (Cosmic Frontier)',
 ]
 
 function drawSky(ctx: CanvasRenderingContext2D, top: string, bottom: string) {
@@ -853,12 +863,276 @@ const FORGE_BACKGROUNDS = Array.from(
     drawStellarForgeBackground(ctx, index),
 )
 
+const SOLAR_SYSTEM_COLORS = [
+  ['#050a1a', '#0b1a3a', '#fbbf24', '#38bdf8'],
+  ['#060814', '#12102f', '#f472b6', '#a78bfa'],
+  ['#040a12', '#0a1f2e', '#fb923c', '#67e8f9'],
+] as const
+
+function drawSolarSystemBackground(
+  ctx: CanvasRenderingContext2D,
+  variant: number,
+) {
+  const [top, bottom, planetColor, ringColor] =
+    SOLAR_SYSTEM_COLORS[variant % SOLAR_SYSTEM_COLORS.length]
+  drawSky(ctx, top, bottom)
+
+  ctx.save()
+  for (let star = 0; star < 46; star += 1) {
+    const x = (star * 163 + variant * 89) % CANVAS_WIDTH
+    const y = 14 + ((star * 59 + variant * 41) % 300)
+    ctx.globalAlpha = 0.2 + (star % 5) * 0.12
+    ctx.fillStyle = '#f8fafc'
+    ctx.fillRect(x, y, star % 8 === 0 ? 3 : 1, star % 8 === 0 ? 3 : 1)
+  }
+  ctx.restore()
+
+  const planetX = 180 + ((variant * 211) % 600)
+  const planetY = 96 + (variant % 3) * 26
+  const planetR = 46 + (variant % 3) * 8
+  const planet = ctx.createRadialGradient(
+    planetX - 14,
+    planetY - 14,
+    4,
+    planetX,
+    planetY,
+    planetR,
+  )
+  planet.addColorStop(0, '#fff7ed')
+  planet.addColorStop(0.32, planetColor)
+  planet.addColorStop(1, '#050a1a')
+  ctx.fillStyle = planet
+  ctx.beginPath()
+  ctx.arc(planetX, planetY, planetR, 0, Math.PI * 2)
+  ctx.fill()
+
+  if (variant % 3 === 1) {
+    ctx.save()
+    ctx.strokeStyle = ringColor
+    ctx.globalAlpha = 0.7
+    ctx.lineWidth = 5
+    ctx.beginPath()
+    ctx.ellipse(
+      planetX,
+      planetY,
+      planetR * 1.7,
+      planetR * 0.4,
+      -0.25,
+      0,
+      Math.PI * 2,
+    )
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  // Distant sun glow low in the sky.
+  const sunX = CANVAS_WIDTH - 90
+  const sun = ctx.createRadialGradient(sunX, 60, 4, sunX, 60, 40)
+  sun.addColorStop(0, '#fff7ed')
+  sun.addColorStop(1, 'rgba(255,247,237,0)')
+  ctx.fillStyle = sun
+  ctx.beginPath()
+  ctx.arc(sunX, 60, 40, 0, Math.PI * 2)
+  ctx.fill()
+
+  // Asteroid belt band.
+  ctx.save()
+  ctx.fillStyle = '#1e293b'
+  for (let rock = 0; rock < 26; rock += 1) {
+    const x = (rock * 137 + variant * 53) % CANVAS_WIDTH
+    const y = GROUND_Y - 30 - ((rock * 31 + variant * 17) % 40)
+    const size = 3 + (rock % 4)
+    ctx.globalAlpha = 0.5 + (rock % 3) * 0.15
+    ctx.beginPath()
+    ctx.arc(x, y, size, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.restore()
+
+  drawGround(ctx, '#12213f', '#040a12')
+}
+
+const SOLAR_SYSTEM_BACKGROUNDS = Array.from(
+  { length: 3 },
+  (_, index) => (ctx: CanvasRenderingContext2D) =>
+    drawSolarSystemBackground(ctx, index),
+)
+
+const GALAXY_COLORS = [
+  ['#0a0416', '#1c0a38', '#c084fc'],
+  ['#08051c', '#170b3c', '#38bdf8'],
+  ['#0c0312', '#210a34', '#f472b6'],
+] as const
+
+function drawGalaxyBackground(ctx: CanvasRenderingContext2D, variant: number) {
+  const [top, bottom, glow] = GALAXY_COLORS[variant % GALAXY_COLORS.length]
+  drawSky(ctx, top, bottom)
+
+  ctx.save()
+  for (let star = 0; star < 70; star += 1) {
+    const x = (star * 149 + variant * 97) % CANVAS_WIDTH
+    const y = 10 + ((star * 73 + variant * 53) % 310)
+    ctx.globalAlpha = 0.18 + (star % 6) * 0.12
+    ctx.fillStyle = star % 5 === 0 ? glow : '#f8fafc'
+    ctx.fillRect(x, y, star % 9 === 0 ? 3 : 1, star % 9 === 0 ? 3 : 1)
+  }
+  ctx.restore()
+
+  // Spiral galaxy silhouette: a stack of rotated, offset ellipses fanning
+  // out from a bright core to suggest spiral arms without needing a
+  // true particle-system spiral.
+  const coreX = 220 + ((variant * 233) % 520)
+  const coreY = 110 + (variant % 3) * 24
+  ctx.save()
+  ctx.translate(coreX, coreY)
+  ctx.rotate(variant * 0.6)
+  for (let arm = 0; arm < 5; arm += 1) {
+    ctx.globalAlpha = 0.16 + arm * 0.03
+    ctx.strokeStyle = glow
+    ctx.lineWidth = 6 - arm
+    ctx.beginPath()
+    ctx.ellipse(0, 0, 30 + arm * 22, 10 + arm * 7, arm * 0.5, 0, Math.PI * 1.5)
+    ctx.stroke()
+  }
+  ctx.restore()
+
+  const core = ctx.createRadialGradient(coreX, coreY, 2, coreX, coreY, 34)
+  core.addColorStop(0, '#ffffff')
+  core.addColorStop(0.4, glow)
+  core.addColorStop(1, 'rgba(0,0,0,0)')
+  ctx.fillStyle = core
+  ctx.beginPath()
+  ctx.arc(coreX, coreY, 34, 0, Math.PI * 2)
+  ctx.fill()
+
+  drawGround(ctx, '#150a2c', '#08051c')
+}
+
+const GALAXY_BACKGROUNDS = Array.from(
+  { length: 3 },
+  (_, index) => (ctx: CanvasRenderingContext2D) =>
+    drawGalaxyBackground(ctx, index),
+)
+
+const DEEP_SPACE_COLORS = [
+  ['#010103', '#03040a', '#60a5fa'],
+  ['#000000', '#020208', '#a78bfa'],
+  ['#010102', '#040509', '#67e8f9'],
+] as const
+
+function drawDeepSpaceBackground(
+  ctx: CanvasRenderingContext2D,
+  variant: number,
+) {
+  const [top, bottom, glow] =
+    DEEP_SPACE_COLORS[variant % DEEP_SPACE_COLORS.length]
+  drawSky(ctx, top, bottom)
+
+  ctx.save()
+  for (let star = 0; star < 24; star += 1) {
+    const x = (star * 211 + variant * 131) % CANVAS_WIDTH
+    const y = 8 + ((star * 89 + variant * 61) % 320)
+    ctx.globalAlpha = 0.12 + (star % 4) * 0.08
+    ctx.fillStyle = '#e2e8f0'
+    ctx.fillRect(x, y, 1, 1)
+  }
+  ctx.restore()
+
+  // A distant void/dark-matter ring — the only real focal point in an
+  // otherwise near-empty sky, on purpose (contrast before the finale).
+  const voidX = 200 + ((variant * 271) % 560)
+  const voidY = 130 + (variant % 3) * 30
+  ctx.save()
+  ctx.strokeStyle = glow
+  ctx.globalAlpha = 0.35
+  ctx.lineWidth = 2
+  ctx.beginPath()
+  ctx.arc(voidX, voidY, 26, 0, Math.PI * 2)
+  ctx.stroke()
+  ctx.fillStyle = '#000000'
+  ctx.globalAlpha = 1
+  ctx.beginPath()
+  ctx.arc(voidX, voidY, 22, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.restore()
+
+  drawGround(ctx, '#050608', '#000000')
+}
+
+const DEEP_SPACE_BACKGROUNDS = Array.from(
+  { length: 3 },
+  (_, index) => (ctx: CanvasRenderingContext2D) =>
+    drawDeepSpaceBackground(ctx, index),
+)
+
+function drawHellfireBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#1a0300', '#5a1206')
+
+  const glow = ctx.createRadialGradient(
+    CANVAS_WIDTH / 2,
+    GROUND_Y,
+    20,
+    CANVAS_WIDTH / 2,
+    GROUND_Y,
+    340,
+  )
+  glow.addColorStop(0, '#fbbf24')
+  glow.addColorStop(0.4, '#f97316')
+  glow.addColorStop(1, 'rgba(26,3,0,0)')
+  ctx.fillStyle = glow
+  ctx.fillRect(0, 0, CANVAS_WIDTH, GROUND_Y)
+
+  // Jagged hellscape spires with glowing cracks.
+  ctx.fillStyle = '#0c0100'
+  for (let spire = 0; spire < 8; spire += 1) {
+    const x = spire * 128 - 20
+    const height = 90 + ((spire * 61) % 160)
+    ctx.beginPath()
+    ctx.moveTo(x, GROUND_Y)
+    ctx.lineTo(x + 16, GROUND_Y - height)
+    ctx.lineTo(x + 34, GROUND_Y - height * 0.55)
+    ctx.lineTo(x + 52, GROUND_Y)
+    ctx.closePath()
+    ctx.fill()
+    ctx.save()
+    ctx.strokeStyle = '#fb923c'
+    ctx.globalAlpha = 0.7
+    ctx.lineWidth = 2
+    ctx.beginPath()
+    ctx.moveTo(x + 26, GROUND_Y - height * 0.3)
+    ctx.lineTo(x + 20, GROUND_Y - height * 0.1)
+    ctx.stroke()
+    ctx.restore()
+  }
+
+  // Rising embers.
+  ctx.save()
+  for (let ember = 0; ember < 34; ember += 1) {
+    const x = (ember * 127) % CANVAS_WIDTH
+    const y = GROUND_Y - ((ember * 71) % (GROUND_Y - 20))
+    ctx.globalAlpha = 0.25 + (ember % 5) * 0.12
+    ctx.fillStyle = ember % 3 === 0 ? '#fde047' : '#fb923c'
+    ctx.beginPath()
+    ctx.arc(x, y, 1.5 + (ember % 3), 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.restore()
+
+  drawGround(ctx, '#5a1206', '#0c0100')
+}
+
+const HELLFIRE_BACKGROUNDS = [drawHellfireBackground]
+
 const RAW_BACKGROUNDS = [
   ...BASE_BACKGROUNDS,
   ...ILLUSTRATED_BACKGROUNDS,
   ...DIMENSION_BACKGROUNDS,
   ...TRENCH_BACKGROUNDS,
   ...FORGE_BACKGROUNDS,
+  ...SOLAR_SYSTEM_BACKGROUNDS,
+  ...GALAXY_BACKGROUNDS,
+  ...DEEP_SPACE_BACKGROUNDS,
+  ...HELLFIRE_BACKGROUNDS,
 ]
 
 export const BACKGROUNDS = RAW_BACKGROUNDS.map(

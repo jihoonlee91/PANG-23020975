@@ -4,9 +4,9 @@ import { BACKGROUNDS, STAGE_NAMES } from './backgrounds'
 import { findPortalTransition, getStagePortals, teleportBall } from './portals'
 
 describe('dimension portals', () => {
-  it('provides a unique map name and background slot for all 50 stages', () => {
-    expect(STAGE_NAMES).toHaveLength(50)
-    expect(BACKGROUNDS).toHaveLength(50)
+  it('provides a unique map name and background slot for all 60 stages', () => {
+    expect(STAGE_NAMES).toHaveLength(60)
+    expect(BACKGROUNDS).toHaveLength(60)
   })
 
   it('stops returning portals past the dimension-stage range (30-49)', () => {

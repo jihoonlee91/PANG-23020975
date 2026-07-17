@@ -31,7 +31,7 @@ export const SCORE_BY_LEVEL = [300, 150, 100]
 
 export const COMBO_WINDOW_MS = 1500
 
-export const STAGE_COUNT = 50
+export const STAGE_COUNT = 60
 export const STAGE_TIME_SECONDS = 90
 export const TIME_BONUS_PER_SECOND = 10
 
@@ -103,6 +103,17 @@ export const STAGE_OBSTACLES: readonly Obstacle[] = [
   { x: 150, y: 260, width: 190, height: 18 },
   { x: 650, y: 300, width: 170, height: 18 },
   { x: 380, y: 150, width: 240, height: 18 },
+  // --- Cosmic Frontier (stages 51-60) ---
+  { x: 200, y: 175, width: 220, height: 18 },
+  { x: 610, y: 305, width: 190, height: 18 },
+  { x: 70, y: 260, width: 200, height: 18 },
+  { x: 470, y: 345, width: 230, height: 18 },
+  { x: 730, y: 190, width: 160, height: 18 },
+  { x: 290, y: 220, width: 250, height: 18 },
+  { x: 550, y: 170, width: 200, height: 18 },
+  { x: 130, y: 335, width: 190, height: 18 },
+  { x: 660, y: 250, width: 180, height: 18 },
+  { x: 400, y: 160, width: 220, height: 18 },
 ]
 
 export function getStageObstacle(stageIndex: number): Obstacle {
