@@ -151,6 +151,10 @@ const BUFF_LABELS: Record<
   invincible: 'Invincible',
 }
 
+// Timed buffs start blinking in the HUD once this many seconds remain, so
+// their expiry is never a surprise.
+const BUFF_LOW_TIME_SECONDS = 3
+
 const TIMED_BUFF_KEYS = [
   'doubleWire',
   'powerWire',
@@ -2310,7 +2314,11 @@ function GamePlay({
           <div className="hud-buffs-overlay" aria-label="Active item effects">
             {TIMED_BUFF_KEYS.filter((key) => buffs[key] > 0).map((key) => (
               <span
-                className="buff-timer"
+                className={
+                  buffs[key] <= BUFF_LOW_TIME_SECONDS
+                    ? 'buff-timer buff-timer-low'
+                    : 'buff-timer'
+                }
                 style={{ '--buff-color': ITEM_COLORS[key] } as CSSProperties}
                 aria-label={`${BUFF_LABELS[key]} ${buffs[key]} seconds remaining`}
                 key={key}

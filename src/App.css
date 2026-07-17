@@ -1073,6 +1073,27 @@
   font-variant-numeric: tabular-nums;
 }
 
+@keyframes buff-timer-low-blink {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 12px color-mix(in srgb, var(--buff-color) 28%, transparent);
+  }
+  50% {
+    transform: scale(1.08);
+    box-shadow: 0 0 16px color-mix(in srgb, #ef4444 65%, transparent);
+  }
+}
+
+.buff-timer-low {
+  border-color: color-mix(in srgb, #ef4444 60%, white 12%);
+  animation: buff-timer-low-blink 480ms ease-in-out infinite;
+}
+
+.buff-timer-low strong {
+  color: #fca5a5;
+}
+
 @media (max-width: 900px) {
   .buff-timer-name {
     display: none;
