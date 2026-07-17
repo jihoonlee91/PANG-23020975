@@ -69,6 +69,10 @@ function App() {
   const [screen, setScreen] = useState<Screen>('main')
   const [countdown, setCountdown] = useState(COUNTDOWN_START)
   const [stageIndex, setStageIndex] = useState(0)
+  // Bumped on every demo game over, purely to force GamePlay to remount —
+  // setStageIndex(0) alone is a no-op (and so never resets anything) when
+  // the AI dies on stage 1, since the index is already 0.
+  const [demoRunId, setDemoRunId] = useState(0)
   const [finalScore, setFinalScore] = useState(0)
   const [result, setResult] = useState<StageResult>('gameover')
   const [rank, setRank] = useState(1)
@@ -358,6 +362,7 @@ function App() {
 
   const handleDemoGameOver = () => {
     setStageIndex(0)
+    setDemoRunId((id) => id + 1)
   }
 
   const handleNameChange = (name: string) => {
@@ -640,6 +645,7 @@ function App() {
     return (
       <div className="gameplay">
         <GamePlay
+          key={demoRunId}
           demo
           stageIndex={stageIndex}
           onClear={handleDemoClear}

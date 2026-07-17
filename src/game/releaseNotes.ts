@@ -9,6 +9,13 @@ export type ReleaseNote = {
 // recent releases are kept; older entries can be dropped.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.12.1',
+    date: '2026-07-17',
+    notes: [
+      'Fixed AI Play permanently freezing if it died on stage 1 (the attract loop now always recovers, no matter which stage it dies on).',
+    ],
+  },
+  {
     version: '1.12.0',
     date: '2026-07-17',
     notes: [
@@ -48,10 +55,5 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     notes: [
       'Browsers with weak install support (Samsung Internet, Firefox) now suggest switching to Chrome for the smoothest setup.',
     ],
-  },
-  {
-    version: '1.7.1',
-    date: '2026-07-17',
-    notes: ['Samsung Internet now gets its own install instructions.'],
   },
 ]
