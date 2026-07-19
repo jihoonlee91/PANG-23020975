@@ -2,6 +2,16 @@ import { describe, expect, it } from 'vitest'
 import { ITEM_WEIGHTS, getItemWeights } from './constants'
 
 describe('getItemWeights', () => {
+  it('includes vulcan through stage 30 (0-indexed 29)', () => {
+    expect(getItemWeights(0).some(([type]) => type === 'vulcan')).toBe(true)
+    expect(getItemWeights(29).some(([type]) => type === 'vulcan')).toBe(true)
+  })
+
+  it('excludes vulcan from stage 31 (0-indexed 30) onward', () => {
+    expect(getItemWeights(30).some(([type]) => type === 'vulcan')).toBe(false)
+    expect(getItemWeights(99).some(([type]) => type === 'vulcan')).toBe(false)
+  })
+
   it('excludes stabilizer before the current/gravity-well stages start', () => {
     expect(getItemWeights(39)).toEqual(ITEM_WEIGHTS)
   })

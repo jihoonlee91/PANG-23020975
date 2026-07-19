@@ -9,6 +9,14 @@ export type ReleaseNote = {
 // recent releases are kept; older entries can be dropped.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.17.0',
+    date: '2026-07-19',
+    notes: [
+      'Vulcan (rapid-fire) no longer drops past stage 30 — it made the early-mid game too easy, so it now steps aside for the harder stages after.',
+      'Power Harpoon shows up twice as often now, but each pickup is a shorter, punchier 6 seconds instead of 12.',
+    ],
+  },
+  {
     version: '1.16.3',
     date: '2026-07-19',
     notes: [
@@ -54,13 +62,6 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     notes: [
       '20 new stages! World Tour II (21-30) adds 10 more real-world landmarks, and the game now ends with Vortex Frontier (71-80) — a spinning gravity well that curves balls into an orbit.',
       'Every stage from 21 onward shifted up by 10 to make room: Dimension X is now 31-40, The Trench 41-50, Stellar Forge 51-60, Cosmic Frontier 61-70.',
-    ],
-  },
-  {
-    version: '1.13.0',
-    date: '2026-07-17',
-    notes: [
-      '10 new stages! Cosmic Frontier travels outward from the solar system through the galaxy into deep space, ending on a Hellfire finale.',
     ],
   },
 ]
