@@ -9,6 +9,14 @@ export type ReleaseNote = {
 // recent releases are kept; older entries can be dropped.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.20.0',
+    date: '2026-07-19',
+    notes: [
+      'New Glossary page (from the main menu) shows every item and map hazard with its actual in-game icon and what it does.',
+      'The first time you reach a stage with a brand-new hazard, a one-time popup explains it before you have to figure it out the hard way.',
+    ],
+  },
+  {
     version: '1.19.0',
     date: '2026-07-19',
     notes: [
@@ -51,15 +59,6 @@ export const RELEASE_NOTES: ReleaseNote[] = [
     date: '2026-07-18',
     notes: [
       'Fixed Clock and Hourglass not affecting the stage timer — the clock now stops while Clock is active and slows to match while Hourglass is active, instead of counting down at normal speed.',
-    ],
-  },
-  {
-    version: '1.16.0',
-    date: '2026-07-18',
-    notes: [
-      'Platform layouts stopped repeating the same shape past stage 20 — 8 distinct hand-designed arrangements now cycle across stages 21-100.',
-      'Two new items: Fireproof (Hell, stage 81+) grants brief immunity to fire zones, and Anchor (Void, stage 91+) briefly restores normal gravity.',
-      'Fixed ball speed climbing unbounded past stage 80 — it now caps at the same speed as the original 80-stage design, so Hell and Void stay winnable.',
     ],
   },
 ]

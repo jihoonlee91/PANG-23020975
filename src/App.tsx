@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import './App.css'
 import GamePlay from './GamePlay'
 import StageMap from './StageMap'
+import Glossary from './Glossary'
 import { STAGE_COUNT } from './game/constants'
 import type { StageResult } from './game/types'
 import { getPlayerName, recordScore, renameEntry } from './game/scoreHistory'
@@ -30,6 +31,7 @@ type Screen =
   | 'map'
   | 'settings'
   | 'whatsNew'
+  | 'glossary'
   | 'end'
 
 const MILESTONE_INTERVAL = 10
@@ -45,6 +47,7 @@ const BACK_TO_MAIN_SCREENS: readonly Screen[] = [
   'demo',
   'end',
   'whatsNew',
+  'glossary',
 ]
 
 // Most back-to-main screens really do go to 'main'; 'whatsNew' is opened
@@ -505,6 +508,13 @@ function App() {
           <button
             type="button"
             className="screen-button screen-button-secondary"
+            onClick={() => setScreen('glossary')}
+          >
+            Glossary
+          </button>
+          <button
+            type="button"
+            className="screen-button screen-button-secondary"
             onClick={() => setScreen('settings')}
           >
             Settings
@@ -541,6 +551,10 @@ function App() {
         highestUnlockedStage={highestUnlockedStage}
       />
     )
+  }
+
+  if (screen === 'glossary') {
+    return <Glossary onBack={() => setScreen('main')} />
   }
 
   if (screen === 'settings') {
