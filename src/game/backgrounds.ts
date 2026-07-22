@@ -22,6 +22,11 @@ import frozenSummitPlateUrl from '../assets/backgrounds/stages111-120-frozen-sum
 import solarStormPlateUrl from '../assets/backgrounds/stages121-130-solar-storm.webp'
 import quantumRiftPlateUrl from '../assets/backgrounds/stages131-140-quantum-rift.webp'
 import overdriveNexusPlateUrl from '../assets/backgrounds/stages141-150-overdrive-nexus.webp'
+import chaosGatewayPlateUrl from '../assets/backgrounds/stages151-160-chaos-gateway.webp'
+import stormCitadelPlateUrl from '../assets/backgrounds/stages161-170-storm-citadel.webp'
+import cosmicMaelstromPlateUrl from '../assets/backgrounds/stages171-180-cosmic-maelstrom.webp'
+import prismaticCollapsePlateUrl from '../assets/backgrounds/stages181-190-prismatic-collapse.webp'
+import finalSingularityPlateUrl from '../assets/backgrounds/stages191-200-final-singularity.webp'
 
 const UNIQUE_STAGE_IMAGE_URLS = import.meta.glob(
   '../assets/backgrounds/illustrated/stage*.webp',
@@ -186,6 +191,56 @@ export const STAGE_NAMES = [
   'The Last Stand (Overdrive Nexus)',
   'Ultimate Overdrive (Overdrive Nexus)',
   "Orbit's End (Overdrive Nexus)",
+  'Fracture Threshold (Chaos Rift)',
+  'Crimson Fault (Chaos Rift)',
+  'Cobalt Breach (Chaos Rift)',
+  'Shattered Meridian (Chaos Rift)',
+  'Riftward Gate (Chaos Rift)',
+  'Sundered Horizon (Chaos Rift)',
+  'Paradox Arch (Chaos Rift)',
+  'Broken Continuum (Chaos Rift)',
+  'Twinfire Passage (Chaos Rift)',
+  'Gateway Zero (Chaos Rift)',
+  'Stormbound Bastion (Chaos Rift)',
+  'Lightning Keep (Chaos Rift)',
+  'Citadel Drift (Chaos Rift)',
+  'Thunder Crown (Chaos Rift)',
+  'Tempest Rampart (Chaos Rift)',
+  'Skyfall Fortress (Chaos Rift)',
+  'Violet Battlement (Chaos Rift)',
+  'Cyclone Spire (Chaos Rift)',
+  'Eye of the Citadel (Chaos Rift)',
+  'Storm Throne (Chaos Rift)',
+  'Magma Spiral (Chaos Rift)',
+  'Plasma Torrent (Chaos Rift)',
+  'Ember Orbit (Chaos Rift)',
+  'Molten Moonfall (Chaos Rift)',
+  'Stellar Crucible (Chaos Rift)',
+  'Cinder Maelstrom (Chaos Rift)',
+  'Bluefire Vortex (Chaos Rift)',
+  'Planetbreaker Flow (Chaos Rift)',
+  'Inferno Helix (Chaos Rift)',
+  'Cosmic Furnace (Chaos Rift)',
+  'Prism Divide (Chaos Rift)',
+  'Crystal Paradox (Chaos Rift)',
+  'Refracted Void (Chaos Rift)',
+  'Spectrum Fold (Chaos Rift)',
+  'Mirrored Rupture (Chaos Rift)',
+  'Impossible Facet (Chaos Rift)',
+  'Chromatic Abyss (Chaos Rift)',
+  'Shattered Rainbow (Chaos Rift)',
+  'Reality Kaleidoscope (Chaos Rift)',
+  'Prismatic Collapse (Chaos Rift)',
+  'First Lightfall (Chaos Rift)',
+  'Radiant Convergence (Chaos Rift)',
+  'Golden Eventide (Chaos Rift)',
+  'Starforge Terminus (Chaos Rift)',
+  'Final Meridian (Chaos Rift)',
+  'Crown of Orbits (Chaos Rift)',
+  'Last Horizon (Chaos Rift)',
+  'Singularity Ascendant (Chaos Rift)',
+  'The White-Hot Core (Chaos Rift)',
+  "Orbit's Final Dawn (Chaos Rift)",
 ]
 
 function drawSky(ctx: CanvasRenderingContext2D, top: string, bottom: string) {
@@ -5129,21 +5184,19 @@ const ILLUSTRATED_VOID_BACKGROUNDS = createChapterIllustratedBackgrounds(
   voidPlateUrl,
   VOID_BACKGROUNDS,
 )
-const ILLUSTRATED_TOXIC_MARSH_BACKGROUNDS =
-  createChapterIllustratedBackgrounds(
-    toxicMarshPlateUrl,
-    TOXIC_MARSH_BACKGROUNDS,
-  )
+const ILLUSTRATED_TOXIC_MARSH_BACKGROUNDS = createChapterIllustratedBackgrounds(
+  toxicMarshPlateUrl,
+  TOXIC_MARSH_BACKGROUNDS,
+)
 const ILLUSTRATED_FROZEN_SUMMIT_BACKGROUNDS =
   createChapterIllustratedBackgrounds(
     frozenSummitPlateUrl,
     FROZEN_SUMMIT_BACKGROUNDS,
   )
-const ILLUSTRATED_SOLAR_STORM_BACKGROUNDS =
-  createChapterIllustratedBackgrounds(
-    solarStormPlateUrl,
-    SOLAR_STORM_BACKGROUNDS,
-  )
+const ILLUSTRATED_SOLAR_STORM_BACKGROUNDS = createChapterIllustratedBackgrounds(
+  solarStormPlateUrl,
+  SOLAR_STORM_BACKGROUNDS,
+)
 const ILLUSTRATED_QUANTUM_RIFT_BACKGROUNDS =
   createChapterIllustratedBackgrounds(
     quantumRiftPlateUrl,
@@ -5171,7 +5224,35 @@ const CHAPTER_ILLUSTRATED_BACKGROUNDS = [
   ...ILLUSTRATED_OVERDRIVE_NEXUS_BACKGROUNDS,
 ]
 
-const UNIQUE_LATE_STAGE_BACKGROUNDS = CHAPTER_ILLUSTRATED_BACKGROUNDS.map(
+const CHAOS_RIFT_CHAPTER_BACKGROUNDS = [
+  ...createChapterIllustratedBackgrounds(
+    chaosGatewayPlateUrl,
+    BASE_BACKGROUNDS,
+  ),
+  ...createChapterIllustratedBackgrounds(
+    stormCitadelPlateUrl,
+    WORLD_TOUR_2_BACKGROUNDS,
+  ),
+  ...createChapterIllustratedBackgrounds(
+    cosmicMaelstromPlateUrl,
+    DIMENSION_BACKGROUNDS,
+  ),
+  ...createChapterIllustratedBackgrounds(
+    prismaticCollapsePlateUrl,
+    TRENCH_BACKGROUNDS,
+  ),
+  ...createChapterIllustratedBackgrounds(
+    finalSingularityPlateUrl,
+    FORGE_BACKGROUNDS,
+  ),
+]
+
+const LATE_STAGE_FALLBACK_BACKGROUNDS = [
+  ...CHAPTER_ILLUSTRATED_BACKGROUNDS,
+  ...CHAOS_RIFT_CHAPTER_BACKGROUNDS,
+]
+
+const UNIQUE_LATE_STAGE_BACKGROUNDS = LATE_STAGE_FALLBACK_BACKGROUNDS.map(
   (fallback, index) => {
     const stageNumber = index + 21
     const key = `../assets/backgrounds/illustrated/stage${String(

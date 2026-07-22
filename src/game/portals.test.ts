@@ -1,12 +1,14 @@
 import { describe, expect, it } from 'vitest'
 import type { Ball } from './types'
 import { BACKGROUNDS, STAGE_NAMES } from './backgrounds'
+import { STAGE_COUNT } from './constants'
 import { findPortalTransition, getStagePortals, teleportBall } from './portals'
 
 describe('dimension portals', () => {
-  it('provides a unique map name and background slot for all 150 stages', () => {
-    expect(STAGE_NAMES).toHaveLength(150)
-    expect(BACKGROUNDS).toHaveLength(150)
+  it('provides a unique map name and background slot for every stage', () => {
+    expect(STAGE_NAMES).toHaveLength(STAGE_COUNT)
+    expect(new Set(STAGE_NAMES).size).toBe(STAGE_COUNT)
+    expect(BACKGROUNDS).toHaveLength(STAGE_COUNT)
   })
 
   it('stops returning portals past the dimension-stage range (40-59)', () => {
