@@ -205,8 +205,9 @@ A file laying out the goals for each phase.
 
 ### Phase 6-4. Illustrated Late-stage Backgrounds
 
-- Give every stage from 21-200 its own precomposed WebP illustration while preserving each stage's distinct Canvas composition
-- Share the same async image-loading and fallback behavior used by stages 11-20
+- Give every stage from 21-200 its own independently generated WebP illustration based on that stage's title and theme
+- Fully replace the Canvas background for these stages; never blend, composite, crop, recolor, or reuse a shared chapter plate
+- Share the same async image-loading behavior used by stages 11-20, with a neutral loading fill instead of the legacy Canvas drawing
 - Keep the stage map responsive with optimized 960×540 assets and lazy browser decoding
 
 ### Phase 6-5. Chaos Rift Finale & Golden Ball (Stages 151-200)

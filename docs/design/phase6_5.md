@@ -42,16 +42,11 @@
   entries were added (matching the existing random-looking style) so
   Chaos Rift at least has its own platform layouts.
 
-### Illustrated Chaos Rift revision
+### Superseded illustrated Chaos Rift approach
 
-- Stages 151-200 extend the illustrated-background system from
-  `phase6_4.md`. Five 16:9 Chaos Rift chapter plates establish a distinct
-  art direction for each ten-stage batch, and every individual stage is
-  exported as its own optimized 960x540 WebP.
-- The final image composites its chapter plate with that stage's Canvas
-  silhouette, seeded details, and hazard-safe open play area. No stage
-  relies on modulo-reused art at runtime; missing or loading images retain
-  a synchronous Canvas fallback.
+- The former five-plate Canvas-compositing approach is replaced by
+  `phase6_6.md`. Stages 151-200 now receive fifty independently generated
+  full-frame illustrations based on their individual map names.
 - Each finale stage also receives a dedicated Chaos Rift map name so the
   stage map's label and illustration remain a unique pair through stage 200.
 - Batch identities are 151-160 fractured crimson/cobalt gateway, 161-170
