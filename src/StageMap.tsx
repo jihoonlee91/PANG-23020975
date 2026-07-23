@@ -201,81 +201,88 @@ function StageMap({
                     PORTAL ×{portalCount}
                   </span>
                 )}
-                {isBreezeStage && (
-                  <span className="stage-map-badge stage-map-badge-current-hazard">
-                    BREEZE
-                  </span>
-                )}
-                {isCurrentStage && (
-                  <span className="stage-map-badge stage-map-badge-current-hazard">
-                    CURRENT
-                  </span>
-                )}
-                {isGravityWellStage && (
-                  <span className="stage-map-badge stage-map-badge-gravity">
-                    GRAVITY WELL
-                  </span>
-                )}
-                {isNebulaStage && (
-                  <span className="stage-map-badge stage-map-badge-gravity">
-                    NEBULA FIELD
-                  </span>
-                )}
-                {isVortexStage && (
-                  <span className="stage-map-badge stage-map-badge-gravity">
-                    VORTEX
-                  </span>
-                )}
-                {isFireZoneStage && (
-                  <span className="stage-map-badge stage-map-badge-portal">
-                    FIRE ZONES
-                  </span>
-                )}
-                {isVoidStage && (
-                  <span className="stage-map-badge stage-map-badge-current-hazard">
-                    LOW GRAVITY
-                  </span>
-                )}
-                {isAcidRainStage && (
-                  <span className="stage-map-badge stage-map-badge-portal">
-                    ACID RAIN
-                  </span>
-                )}
-                {isIceWindStage && (
-                  <span className="stage-map-badge stage-map-badge-current-hazard">
-                    ICE WIND
-                  </span>
-                )}
-                {isSolarFlareStage && (
-                  <span className="stage-map-badge stage-map-badge-portal">
-                    SOLAR FLARE
-                  </span>
-                )}
-                {isQuantumRiftStage && (
-                  <span className="stage-map-badge stage-map-badge-gravity">
-                    QUANTUM JITTER
-                  </span>
-                )}
-                {isOverdriveStage && (
-                  <span className="stage-map-badge stage-map-badge-gravity">
-                    POLARITY WELLS
-                  </span>
-                )}
-                {isChaosCurrentStage && (
-                  <span className="stage-map-badge stage-map-badge-current-hazard">
-                    CURRENT
-                  </span>
-                )}
-                {isChaosWellStage && (
-                  <span className="stage-map-badge stage-map-badge-gravity">
-                    GRAVITY WELL
-                  </span>
-                )}
-                {isChaosFireZoneStage && (
-                  <span className="stage-map-badge stage-map-badge-portal">
-                    FIRE ZONES
-                  </span>
-                )}
+                {/* Hazard-type badges (push/pull/damage) share bottom-right
+                    positioning and can now co-occur on a single stage
+                    (Chaos Rift remixes up to 3 at once), so they're
+                    stacked in a flex column instead of each claiming the
+                    same absolute corner. */}
+                <div className="stage-map-hazard-badges">
+                  {isBreezeStage && (
+                    <span className="stage-map-badge stage-map-badge-current-hazard">
+                      BREEZE
+                    </span>
+                  )}
+                  {isCurrentStage && (
+                    <span className="stage-map-badge stage-map-badge-current-hazard">
+                      CURRENT
+                    </span>
+                  )}
+                  {isGravityWellStage && (
+                    <span className="stage-map-badge stage-map-badge-gravity">
+                      GRAVITY WELL
+                    </span>
+                  )}
+                  {isNebulaStage && (
+                    <span className="stage-map-badge stage-map-badge-gravity">
+                      NEBULA FIELD
+                    </span>
+                  )}
+                  {isVortexStage && (
+                    <span className="stage-map-badge stage-map-badge-gravity">
+                      VORTEX
+                    </span>
+                  )}
+                  {isFireZoneStage && (
+                    <span className="stage-map-badge stage-map-badge-portal">
+                      FIRE ZONES
+                    </span>
+                  )}
+                  {isVoidStage && (
+                    <span className="stage-map-badge stage-map-badge-current-hazard">
+                      LOW GRAVITY
+                    </span>
+                  )}
+                  {isAcidRainStage && (
+                    <span className="stage-map-badge stage-map-badge-portal">
+                      ACID RAIN
+                    </span>
+                  )}
+                  {isIceWindStage && (
+                    <span className="stage-map-badge stage-map-badge-current-hazard">
+                      ICE WIND
+                    </span>
+                  )}
+                  {isSolarFlareStage && (
+                    <span className="stage-map-badge stage-map-badge-portal">
+                      SOLAR FLARE
+                    </span>
+                  )}
+                  {isQuantumRiftStage && (
+                    <span className="stage-map-badge stage-map-badge-gravity">
+                      QUANTUM JITTER
+                    </span>
+                  )}
+                  {isOverdriveStage && (
+                    <span className="stage-map-badge stage-map-badge-gravity">
+                      POLARITY WELLS
+                    </span>
+                  )}
+                  {isChaosCurrentStage && (
+                    <span className="stage-map-badge stage-map-badge-current-hazard">
+                      CURRENT
+                    </span>
+                  )}
+                  {isChaosWellStage && (
+                    <span className="stage-map-badge stage-map-badge-gravity">
+                      GRAVITY WELL
+                    </span>
+                  )}
+                  {isChaosFireZoneStage && (
+                    <span className="stage-map-badge stage-map-badge-portal">
+                      FIRE ZONES
+                    </span>
+                  )}
+                </div>
               </div>
               <p>
                 {i + 1}. {STAGE_NAMES[i % STAGE_NAMES.length]}

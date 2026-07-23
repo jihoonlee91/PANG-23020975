@@ -961,6 +961,28 @@
   background: #0284c7;
 }
 
+/* Hazard-type badges (current/gravity/portal-styled) all anchor to the
+   same corner individually, so when a stage has more than one active at
+   once (Chaos Rift remixes up to 3) they'd stack exactly on top of each
+   other. This container gives them one shared anchor and lays them out
+   in a column instead. */
+.stage-map-hazard-badges {
+  position: absolute;
+  /* Matches where the individual badges themselves anchor (see
+     `#root .stage-map-badge-portal`/`-current-hazard`/`-gravity` below) —
+     bottom-right in the active theme. */
+  bottom: 6px;
+  right: 6px;
+  display: flex;
+  flex-direction: column-reverse;
+  align-items: flex-end;
+  gap: 4px;
+}
+
+.stage-map-hazard-badges .stage-map-badge {
+  position: static;
+}
+
 .stage-map-status {
   color: #334155 !important;
   font-size: var(--fs-sm) !important;
