@@ -3,6 +3,7 @@ import './App.css'
 import GamePlay from './GamePlay'
 import StageMap from './StageMap'
 import Glossary from './Glossary'
+import Intro from './Intro'
 import { STAGE_COUNT } from './game/constants'
 import type { StageResult } from './game/types'
 import {
@@ -28,6 +29,7 @@ import { isUpdateAvailable } from './game/updateCheck'
 import { getLastSeenVersion, setLastSeenVersion } from './game/versionSeen'
 
 type Screen =
+  | 'intro'
   | 'main'
   | 'tutorial'
   | 'countdown'
@@ -48,6 +50,7 @@ const MILESTONE_INTERVAL = 10
 // there (it toggles pause); 'main'/'countdown'/'milestone' have no
 // sensible back target.
 const BACK_TO_MAIN_SCREENS: readonly Screen[] = [
+  'intro',
   'tutorial',
   'settings',
   'map',
@@ -74,7 +77,7 @@ const CONTROLS_SUMMARY =
   'Move: ←/→ or A/D · Fire: Space · Touch controls supported'
 
 function App() {
-  const [screen, setScreen] = useState<Screen>('main')
+  const [screen, setScreen] = useState<Screen>('intro')
   // Where "Back" on the What's New screen should return to: 'settings'
   // when opened via the Settings menu link, 'main' when auto-surfaced
   // right after an update is detected.
@@ -480,6 +483,10 @@ function App() {
     return () => window.removeEventListener('popstate', handlePopState)
   }, [screen, whatsNewReturnTo])
 
+  if (screen === 'intro') {
+    return <Intro onComplete={() => setScreen('main')} />
+  }
+
   if (screen === 'main') {
     return (
       <div className="screen main-screen">
@@ -522,6 +529,13 @@ function App() {
             onClick={startDemo}
           >
             Watch AI Play
+          </button>
+          <button
+            type="button"
+            className="screen-button screen-button-secondary"
+            onClick={() => setScreen('intro')}
+          >
+            Replay Intro
           </button>
           <button
             type="button"
