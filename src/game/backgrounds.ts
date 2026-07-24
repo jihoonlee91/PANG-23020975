@@ -649,6 +649,226 @@ function drawRedSquareBackground(ctx: CanvasRenderingContext2D) {
   drawGround(ctx, '#c9c2a8', '#a89e80')
 }
 
+function drawNeuschwansteinBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#9fc6e8', '#dcecf7')
+  const cx = CANVAS_WIDTH / 2
+  const baseY = GROUND_Y
+  ctx.fillStyle = '#6b8f5e'
+  ctx.beginPath()
+  ctx.moveTo(cx - 260, baseY)
+  ctx.lineTo(cx - 60, baseY - 90)
+  ctx.lineTo(cx + 260, baseY)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillStyle = '#e9e6df'
+  ctx.fillRect(cx - 50, baseY - 210, 40, 130)
+  ctx.fillRect(cx, baseY - 170, 60, 90)
+  ctx.fillRect(cx + 70, baseY - 190, 30, 110)
+  ctx.fillStyle = '#4a6fa5'
+  ;[
+    [cx - 30, baseY - 210, 22],
+    [cx + 30, baseY - 170, 26],
+    [cx + 85, baseY - 190, 18],
+  ].forEach(([x, y, r]) => {
+    ctx.beginPath()
+    ctx.moveTo(x - r, y)
+    ctx.lineTo(x, y - r * 1.3)
+    ctx.lineTo(x + r, y)
+    ctx.closePath()
+    ctx.fill()
+  })
+  drawGround(ctx, '#7bb06a', '#54834a')
+}
+
+function drawColosseumBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#f6c98a', '#fbe3bd')
+  const cx = CANVAS_WIDTH / 2
+  const baseY = GROUND_Y
+  ctx.fillStyle = '#d8b88a'
+  ctx.beginPath()
+  ctx.ellipse(cx, baseY - 40, 240, 90, 0, Math.PI, 0, false)
+  ctx.fill()
+  ctx.fillStyle = '#f6c98a'
+  ctx.strokeStyle = '#b89468'
+  ctx.lineWidth = 3
+  for (let i = -5; i <= 5; i += 1) {
+    const x = cx + i * 40
+    ctx.beginPath()
+    ctx.arc(x, baseY - 40, 16, Math.PI, 0)
+    ctx.stroke()
+  }
+  drawGround(ctx, '#d8c79a', '#b8a479')
+}
+
+function drawSantoriniBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#3fa9dc', '#a9e0f5')
+  const baseY = GROUND_Y
+  ctx.fillStyle = '#8c6a4a'
+  ctx.beginPath()
+  ctx.moveTo(0, baseY)
+  ctx.lineTo(0, baseY - 80)
+  ctx.lineTo(CANVAS_WIDTH, baseY - 40)
+  ctx.lineTo(CANVAS_WIDTH, baseY)
+  ctx.closePath()
+  ctx.fill()
+  const cubes: [number, number, number][] = [
+    [160, 130, 60],
+    [260, 100, 50],
+    [420, 140, 70],
+    [600, 90, 55],
+    [720, 120, 65],
+  ]
+  for (const [x, h, w] of cubes) {
+    ctx.fillStyle = '#f5f3ee'
+    ctx.fillRect(x - w / 2, baseY - 60 - h, w, h)
+    ctx.fillStyle = '#2a6fb5'
+    fillEllipse(ctx, x, baseY - 60 - h, w / 2.4, w / 4)
+  }
+  drawGround(ctx, '#1f8fc0', '#0f5a80')
+}
+
+function drawSagradaFamiliaBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#f0a94e', '#fbd9a0')
+  const cx = CANVAS_WIDTH / 2
+  const baseY = GROUND_Y
+  ctx.fillStyle = '#c9a06a'
+  const spires = [-140, -60, 0, 60, 140]
+  for (const dx of spires) {
+    const h = 200 - Math.abs(dx) * 0.6
+    ctx.beginPath()
+    ctx.moveTo(cx + dx - 18, baseY)
+    ctx.lineTo(cx + dx - 10, baseY - h)
+    ctx.lineTo(cx + dx, baseY - h - 30)
+    ctx.lineTo(cx + dx + 10, baseY - h)
+    ctx.lineTo(cx + dx + 18, baseY)
+    ctx.closePath()
+    ctx.fill()
+  }
+  drawGround(ctx, '#d8c79a', '#b8a479')
+}
+
+function drawMarrakeshBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#f2a25a', '#fbd7a8')
+  const baseY = GROUND_Y
+  ctx.fillStyle = '#c98a4a'
+  ctx.fillRect(CANVAS_WIDTH / 2 - 22, baseY - 220, 44, 220)
+  ctx.beginPath()
+  ctx.arc(CANVAS_WIDTH / 2, baseY - 220, 22, Math.PI, 0)
+  ctx.fill()
+  ctx.fillStyle = '#e8b072'
+  ctx.beginPath()
+  ctx.moveTo(0, baseY)
+  ctx.quadraticCurveTo(200, baseY - 60, 420, baseY - 10)
+  ctx.quadraticCurveTo(680, baseY + 30, CANVAS_WIDTH, baseY - 20)
+  ctx.lineTo(CANVAS_WIDTH, baseY)
+  ctx.closePath()
+  ctx.fill()
+  drawGround(ctx, '#e0a860', '#b87f3f')
+}
+
+function drawSerengetiBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#f5b957', '#fbe0a0')
+  const baseY = GROUND_Y
+  ctx.strokeStyle = '#3a2a18'
+  ctx.lineWidth = 8
+  ctx.beginPath()
+  ctx.moveTo(220, baseY)
+  ctx.lineTo(240, baseY - 120)
+  ctx.stroke()
+  ctx.fillStyle = '#3a5a28'
+  fillEllipse(ctx, 240, baseY - 150, 70, 26)
+  fillEllipse(ctx, 190, baseY - 130, 40, 18)
+  fillEllipse(ctx, 290, baseY - 135, 45, 18)
+  drawGround(ctx, '#c9a850', '#a8863a')
+}
+
+function drawChristRedeemerBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#4fa8d8', '#bfe4f5')
+  const cx = CANVAS_WIDTH / 2
+  const baseY = GROUND_Y
+  ctx.fillStyle = '#5a7a5e'
+  ctx.beginPath()
+  ctx.moveTo(cx - 200, baseY)
+  ctx.lineTo(cx, baseY - 160)
+  ctx.lineTo(cx + 200, baseY)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillStyle = '#e9e6df'
+  ctx.fillRect(cx - 6, baseY - 250, 12, 90)
+  ctx.fillRect(cx - 60, baseY - 210, 120, 12)
+  fillEllipse(ctx, cx, baseY - 258, 10, 10)
+  drawGround(ctx, '#7bb06a', '#54834a')
+}
+
+function drawMachuPicchuBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#8fb8c9', '#dcecf0')
+  const baseY = GROUND_Y
+  ctx.fillStyle = '#5f7a5a'
+  ctx.beginPath()
+  ctx.moveTo(0, baseY)
+  ctx.lineTo(180, baseY - 180)
+  ctx.lineTo(360, baseY - 60)
+  ctx.lineTo(560, baseY - 200)
+  ctx.lineTo(760, baseY - 40)
+  ctx.lineTo(CANVAS_WIDTH, baseY - 100)
+  ctx.lineTo(CANVAS_WIDTH, baseY)
+  ctx.closePath()
+  ctx.fill()
+  ctx.fillStyle = '#c9b88a'
+  for (let i = 0; i < 5; i += 1) {
+    ctx.fillRect(300 + i * 30, baseY - 30 - i * 8, 26, 8 + i * 6)
+  }
+  drawGround(ctx, '#7bb06a', '#54834a')
+}
+
+function drawGrandCanyonBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#f0a85a', '#fbd9a8')
+  const baseY = GROUND_Y
+  const strata = ['#c9713f', '#d68a4f', '#b8622f', '#e0a05f']
+  strata.forEach((color, i) => {
+    ctx.fillStyle = color
+    const top = baseY - 40 - i * 35
+    ctx.beginPath()
+    ctx.moveTo(0, top + 20)
+    ctx.lineTo(300, top - 10)
+    ctx.lineTo(620, top + 15)
+    ctx.lineTo(CANVAS_WIDTH, top - 5)
+    ctx.lineTo(CANVAS_WIDTH, baseY)
+    ctx.lineTo(0, baseY)
+    ctx.closePath()
+    ctx.fill()
+  })
+  drawGround(ctx, '#c9713f', '#8a4a28')
+}
+
+function drawAuroraVillageBackground(ctx: CanvasRenderingContext2D) {
+  drawSky(ctx, '#0a1a2e', '#173a4a')
+  ctx.strokeStyle = '#4ade8099'
+  ctx.lineWidth = 18
+  ctx.beginPath()
+  ctx.moveTo(60, 120)
+  ctx.quadraticCurveTo(300, 40, 540, 140)
+  ctx.quadraticCurveTo(720, 200, 900, 100)
+  ctx.stroke()
+  ctx.strokeStyle = '#a855f799'
+  ctx.lineWidth = 12
+  ctx.beginPath()
+  ctx.moveTo(100, 170)
+  ctx.quadraticCurveTo(320, 100, 560, 190)
+  ctx.quadraticCurveTo(740, 240, 880, 160)
+  ctx.stroke()
+  const baseY = GROUND_Y
+  ctx.fillStyle = '#1a2a3a'
+  ctx.fillRect(CANVAS_WIDTH / 2 - 40, baseY - 50, 80, 50)
+  ctx.beginPath()
+  ctx.moveTo(CANVAS_WIDTH / 2 - 48, baseY - 50)
+  ctx.lineTo(CANVAS_WIDTH / 2, baseY - 90)
+  ctx.lineTo(CANVAS_WIDTH / 2 + 48, baseY - 50)
+  ctx.closePath()
+  ctx.fill()
+  drawGround(ctx, '#eaf3f8', '#c8d8e2')
+}
+
 const BASE_BACKGROUNDS = [
   drawJapanBackground,
   drawGuilinBackground,
@@ -660,6 +880,16 @@ const BASE_BACKGROUNDS = [
   drawEiffelTowerBackground,
   drawBigBenBackground,
   drawRedSquareBackground,
+  drawNeuschwansteinBackground,
+  drawColosseumBackground,
+  drawSantoriniBackground,
+  drawSagradaFamiliaBackground,
+  drawMarrakeshBackground,
+  drawSerengetiBackground,
+  drawChristRedeemerBackground,
+  drawMachuPicchuBackground,
+  drawGrandCanyonBackground,
+  drawAuroraVillageBackground,
 ]
 
 // One hand-drawn Canvas scene per chapter (World Tour excluded — it

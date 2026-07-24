@@ -1916,6 +1916,307 @@
   font-weight: 600;
 }
 
+.chapter-transition-screen {
+  --chapter-primary: #38bdf8;
+  --chapter-secondary: #a78bfa;
+  position: relative;
+  width: min(760px, 100%);
+  min-height: min(620px, 88vh);
+  overflow: hidden;
+  isolation: isolate;
+  background:
+    radial-gradient(circle at 50% 48%, rgb(30 41 59 / 0.2), transparent 34%),
+    linear-gradient(160deg, #040817, #11143a 62%, #06091a);
+}
+
+.chapter-tone-traveler {
+  --chapter-primary: #fbbf24;
+  --chapter-secondary: #ef4444;
+}
+
+.chapter-tone-diver {
+  --chapter-primary: #22d3ee;
+  --chapter-secondary: #0284c7;
+}
+
+.chapter-tone-astronaut {
+  --chapter-primary: #e2e8f0;
+  --chapter-secondary: #38bdf8;
+}
+
+.chapter-tone-fireguard {
+  --chapter-primary: #fb923c;
+  --chapter-secondary: #ef4444;
+}
+
+.chapter-tone-hazmat {
+  --chapter-primary: #bef264;
+  --chapter-secondary: #65a30d;
+}
+
+.chapter-tone-alpine {
+  --chapter-primary: #cffafe;
+  --chapter-secondary: #2dd4bf;
+}
+
+.chapter-tone-tech,
+.chapter-tone-eclipse {
+  --chapter-primary: #c084fc;
+  --chapter-secondary: #22d3ee;
+}
+
+.chapter-starfield,
+.chapter-world,
+.chapter-gate {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+
+.chapter-starfield span {
+  --star-angle: calc(var(--star-index) * 20deg);
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(38px + var(--star-index) * 3px);
+  height: 2px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, transparent, var(--chapter-primary));
+  opacity: 0;
+  transform: rotate(var(--star-angle)) translateX(48px);
+  transform-origin: left center;
+  animation: chapter-star-jump 1.2s ease-in calc(var(--star-index) * 35ms)
+    infinite;
+}
+
+.chapter-gate {
+  display: grid;
+  place-items: center;
+  animation: chapter-gate-arrival 4.2s ease-in-out both;
+}
+
+.chapter-gate-ring {
+  position: absolute;
+  border: 3px solid var(--chapter-primary);
+  border-radius: 50%;
+  box-shadow:
+    0 0 18px var(--chapter-primary),
+    inset 0 0 18px var(--chapter-secondary);
+}
+
+.chapter-gate-ring-outer {
+  width: 260px;
+  aspect-ratio: 1;
+  border-style: dashed;
+  animation: chapter-ring-spin 3.4s linear infinite;
+}
+
+.chapter-gate-ring-middle {
+  width: 190px;
+  aspect-ratio: 1;
+  border-color: var(--chapter-secondary);
+  animation: chapter-ring-spin 2.3s linear infinite reverse;
+}
+
+.chapter-gate-ring-inner {
+  width: 125px;
+  aspect-ratio: 1;
+  border-width: 6px;
+  animation: chapter-ring-pulse 0.8s ease-in-out infinite alternate;
+}
+
+.chapter-gate-core {
+  display: grid;
+  width: 88px;
+  aspect-ratio: 1;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: radial-gradient(
+    circle,
+    #fff 0 4%,
+    var(--chapter-primary) 18%,
+    #172554 58%,
+    #020617 74%
+  );
+  box-shadow: 0 0 48px 12px var(--chapter-secondary);
+  font-family: var(--font-game);
+  font-size: 10px;
+  letter-spacing: 0.18em;
+}
+
+.chapter-world {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+}
+
+.chapter-world span {
+  position: absolute;
+  bottom: -155px;
+  width: 420px;
+  aspect-ratio: 1;
+  border: 3px solid var(--chapter-primary);
+  border-radius: 50%;
+  background:
+    radial-gradient(circle at 35% 28%, rgb(255 255 255 / 0.5), transparent 5%),
+    repeating-linear-gradient(
+      18deg,
+      transparent 0 28px,
+      rgb(255 255 255 / 0.08) 29px 32px
+    ),
+    radial-gradient(
+      circle at 50% 38%,
+      var(--chapter-secondary),
+      #172554 60%,
+      #020617 76%
+    );
+  box-shadow: 0 -12px 42px var(--chapter-primary);
+}
+
+.chapter-world-origin {
+  animation: chapter-world-depart 2s ease-in forwards;
+}
+
+.chapter-world-destination {
+  opacity: 0;
+  animation: chapter-world-arrive 1.5s ease-out 2.35s forwards;
+}
+
+.chapter-transition-copy {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: center;
+  min-height: 360px;
+  align-content: start;
+  text-align: center;
+}
+
+.chapter-transition-copy h1 {
+  max-width: 620px;
+  margin: 8px 0;
+  color: var(--chapter-primary);
+  text-shadow:
+    0 0 22px var(--chapter-secondary),
+    3px 3px 0 #111827;
+  animation: chapter-title-arrive 1s ease-out 2.45s both;
+}
+
+.chapter-origin-label {
+  color: #94a3b8;
+  font-size: var(--fs-xs);
+  animation: chapter-origin-fade 1.8s ease-in forwards;
+}
+
+.chapter-route {
+  margin: 4px 0;
+  color: var(--chapter-secondary);
+  letter-spacing: 0.35em;
+  text-shadow: 0 0 12px var(--chapter-primary);
+}
+
+.chapter-arrival-stage,
+.chapter-arrival-title {
+  position: relative;
+  z-index: 2;
+  margin: 2px 0;
+  opacity: 0;
+  animation: chapter-title-arrive 0.8s ease-out 2.75s forwards;
+}
+
+.chapter-arrival-stage {
+  color: #fff;
+  font-size: var(--fs-sm);
+}
+
+.chapter-arrival-title {
+  color: #bae6fd;
+  font-size: var(--fs-xs);
+}
+
+.chapter-enter-button,
+.chapter-transition-screen .space-hint {
+  position: relative;
+  z-index: 3;
+}
+
+@keyframes chapter-star-jump {
+  0% {
+    opacity: 0;
+    transform: rotate(var(--star-angle)) translateX(45px) scaleX(0.2);
+  }
+  35% {
+    opacity: 0.85;
+  }
+  100% {
+    opacity: 0;
+    transform: rotate(var(--star-angle)) translateX(360px) scaleX(1.7);
+  }
+}
+
+@keyframes chapter-ring-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes chapter-ring-pulse {
+  to {
+    transform: scale(1.12);
+    filter: brightness(1.5);
+  }
+}
+
+@keyframes chapter-gate-arrival {
+  0%,
+  100% {
+    transform: scale(0.35);
+    opacity: 0;
+  }
+  22%,
+  72% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes chapter-world-depart {
+  to {
+    transform: translateY(230px) scale(0.35);
+    opacity: 0;
+  }
+}
+
+@keyframes chapter-world-arrive {
+  from {
+    transform: translateY(220px) scale(0.35);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 0.72;
+  }
+}
+
+@keyframes chapter-origin-fade {
+  to {
+    transform: translateY(-12px);
+    opacity: 0;
+  }
+}
+
+@keyframes chapter-title-arrive {
+  from {
+    transform: translateY(24px) scale(0.8);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
 .result-actions {
   display: flex;
   flex-direction: column;
@@ -1935,6 +2236,7 @@
 @media (orientation: landscape) and (max-height: 500px) {
   .result-screen,
   .milestone-screen,
+  .chapter-transition-screen,
   .tutorial-screen,
   .whats-new-screen {
     padding: 16px 20px;
@@ -1950,6 +2252,18 @@
     overflow-y: auto;
     padding: 8px;
     font-size: 10px;
+  }
+
+  .chapter-transition-screen {
+    min-height: 430px;
+  }
+
+  .chapter-transition-copy {
+    min-height: 270px;
+  }
+
+  .chapter-gate {
+    transform: scale(0.72);
   }
 
   .whats-new-list {
@@ -2660,5 +2974,26 @@
   #root .space-hint,
   #root .main-start-button {
     animation: none;
+  }
+
+  #root .chapter-starfield,
+  #root .chapter-world-origin,
+  #root .chapter-gate-ring {
+    display: none;
+  }
+
+  #root .chapter-gate,
+  #root .chapter-world-destination,
+  #root .chapter-origin-label,
+  #root .chapter-transition-copy h1,
+  #root .chapter-arrival-stage,
+  #root .chapter-arrival-title {
+    animation: none;
+    transform: none;
+    opacity: 1;
+  }
+
+  #root .chapter-world-destination {
+    opacity: 0.65;
   }
 }

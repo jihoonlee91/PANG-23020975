@@ -4,7 +4,9 @@ import GamePlay from './GamePlay'
 import StageMap from './StageMap'
 import Glossary from './Glossary'
 import Intro from './Intro'
+import ChapterTransition from './ChapterTransition'
 import { PUBLIC_STAGE_COUNT, STAGE_COUNT } from './game/constants'
+import { STAGE_NAMES } from './game/backgrounds'
 import type { StageResult } from './game/types'
 import {
   getBestScore,
@@ -40,6 +42,7 @@ type Screen =
   | 'play'
   | 'stageClear'
   | 'milestone'
+  | 'chapterTransition'
   | 'hiddenReveal'
   | 'demo'
   | 'demoMap'
@@ -400,6 +403,10 @@ function App() {
   }
 
   const continueFromMilestone = () => {
+    setScreen('chapterTransition')
+  }
+
+  const continueFromChapterTransition = () => {
     setStageAdvanceCountdown(STAGE_ADVANCE_COUNTDOWN)
     setScreen('stageClear')
   }
@@ -461,6 +468,9 @@ function App() {
           break
         case 'milestone':
           continueFromMilestone()
+          break
+        case 'chapterTransition':
+          continueFromChapterTransition()
           break
         case 'hiddenReveal':
           continueToHiddenFinale()
@@ -761,6 +771,20 @@ function App() {
         </button>
         <p className="space-hint">▼ Press Space to Continue ▼</p>
       </div>
+    )
+  }
+
+  if (screen === 'chapterTransition') {
+    const fromStageIndex = Math.max(0, milestoneStage - 1)
+    const toStageIndex = Math.min(STAGE_NAMES.length - 1, milestoneStage)
+    return (
+      <ChapterTransition
+        fromStageIndex={fromStageIndex}
+        fromStageName={STAGE_NAMES[fromStageIndex]}
+        toStageIndex={toStageIndex}
+        toStageName={STAGE_NAMES[toStageIndex]}
+        onComplete={continueFromChapterTransition}
+      />
     )
   }
 
