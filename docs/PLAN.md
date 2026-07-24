@@ -242,3 +242,14 @@ A file laying out the goals for each phase.
 - Combine world-tour landmarks and the eclipse finale into one readable arcade
   poster while keeping the `ORBIT` title dominant at thumbnail size
 - Publish the image through Open Graph and Twitter card metadata
+
+### Phase 6-10. Orbit Ranger Character Upgrade
+
+- Replace the simple rectangular player rendering with a cohesive arcade hero
+  silhouette built from layered Canvas 2D shapes
+- Add readable helmet, visor, launcher, torso armor, gloves, boots, backpack,
+  walk-cycle motion, and firing recoil without changing collision balance
+- Preserve the five progression themes with distinct palettes and equipment
+  details while keeping one recognizable character identity
+- Upgrade normal, Power Wire, Vulcan, and Piercer shots with distinct animated
+  launch effects, cable materials, projectile silhouettes, and glow colors

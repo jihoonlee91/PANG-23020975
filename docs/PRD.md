@@ -15,6 +15,10 @@
 ## 3. Main Feature Scope
 
 - Player controls and firing (keyboard and touch)
+- A polished animated Orbit Ranger with a readable helmet, equipment,
+  movement, firing recoil, damage feedback, and themed suits
+- High-quality weapon feedback with a visible launcher, metallic harpoon heads,
+  layered cables, muzzle flashes, energy trails, and distinct power variants
 - Ball physics behavior and split logic
 - Stage progression and difficulty escalation, with per-stage themed backgrounds and BGM
 - Power-up items
