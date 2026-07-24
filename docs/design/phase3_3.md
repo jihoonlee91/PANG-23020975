@@ -20,8 +20,9 @@
 
 ## Unified background assets
 
-- Every stage from 1 through 201 has one dedicated `960x540` WebP background matching the gameplay Canvas coordinate space.
+- Every stage from 1 through 201 has one dedicated illustrated `960x540` WebP background matching the gameplay Canvas coordinate space.
 - All stage backgrounds live together under `src/assets/backgrounds/stages/`.
 - Asset filenames use a zero-padded stage number (`stage001.webp` through `stage201.webp`) so completeness and ordering can be checked mechanically.
-- Stages 1-10 preserve the existing Canvas 2D landmark compositions as exported WebP images; stages 11-201 keep their existing illustrated compositions.
+- Stages 1-10 use bespoke high-detail landmark illustrations matching the visual treatment of stages 11-20; exported screenshots of procedural Canvas backgrounds do not qualify as illustrated assets.
+- The existing Canvas 2D landmark functions for stages 1-10 remain separate as lightweight procedural fallbacks and unrevealed-stage placeholders.
 - The gameplay readability grade is baked consistently into every exported image, so the runtime must not apply the grade twice.
