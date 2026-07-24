@@ -48,6 +48,7 @@ export type ItemType =
   | 'starBalloon'
   | 'diagonalWire'
   | 'spikeArmor'
+  | 'aiHelper'
 
 export type Item = {
   id: number

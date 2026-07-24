@@ -62,6 +62,7 @@ import {
   DIAGONAL_WIRE_DURATION_MS,
   DIAGONAL_HARPOON_VX,
   SPIKE_ARMOR_DURATION_MS,
+  AI_HELPER_DURATION_MS,
   GOLDEN_BALL_CHANCE,
   GOLDEN_BALL_SCORE_MULTIPLIER,
   getItemWeights,
@@ -99,6 +100,7 @@ import {
   getStageCritters,
   getCritterX,
   critterHitsPlayer,
+  harpoonHitsCritter,
   CRITTER_RADIUS,
   type Critter,
 } from './game/critters'
@@ -229,6 +231,7 @@ const ITEM_LABELS: Record<ItemType, string> = {
   starBalloon: '*',
   diagonalWire: 'X',
   spikeArmor: 'Y',
+  aiHelper: 'H',
 }
 
 const BUFF_LABELS: Record<
@@ -252,7 +255,8 @@ const BUFF_LABELS: Record<
   | 'overdrive'
   | 'pierce'
   | 'diagonalWire'
-  | 'spikeArmor',
+  | 'spikeArmor'
+  | 'aiHelper',
   string
 > = {
   doubleWire: 'Double Wire',
@@ -276,6 +280,7 @@ const BUFF_LABELS: Record<
   pierce: 'Piercer',
   diagonalWire: 'Diagonal Wire',
   spikeArmor: 'Spike Armor',
+  aiHelper: 'AI Helper',
 }
 
 // Timed buffs start blinking in the HUD once this many seconds remain, so
@@ -304,6 +309,7 @@ const TIMED_BUFF_KEYS = [
   'pierce',
   'diagonalWire',
   'spikeArmor',
+  'aiHelper',
 ] as const
 
 const ITEM_ANNOUNCEMENTS: Record<ItemType, string> = {
@@ -335,6 +341,7 @@ const ITEM_ANNOUNCEMENTS: Record<ItemType, string> = {
   starBalloon: 'Star Balloon!',
   diagonalWire: 'Diagonal Wire!',
   spikeArmor: 'Spike Armor!',
+  aiHelper: 'AI Helper!',
 }
 
 type Particle = {
@@ -2094,6 +2101,7 @@ type BuffDisplay = {
   pierce: number
   diagonalWire: number
   spikeArmor: number
+  aiHelper: number
 }
 
 const NO_BUFFS: BuffDisplay = {
@@ -2119,6 +2127,7 @@ const NO_BUFFS: BuffDisplay = {
   pierce: 0,
   diagonalWire: 0,
   spikeArmor: 0,
+  aiHelper: 0,
 }
 
 function GamePlay({
@@ -2247,6 +2256,7 @@ function GamePlay({
   const pendingClearScoreRef = useRef<number | null>(null)
   // Indices into terrain.platforms that a harpoon has broken this stage.
   const destroyedPlatformsRef = useRef<Set<number>>(new Set())
+  const crittersKilledRef = useRef<Set<number>>(new Set())
   const particlesRef = useRef<Particle[]>([])
   const popupsRef = useRef<Popup[]>([])
   const pickupEffectsRef = useRef<PickupEffect[]>([])
@@ -2272,6 +2282,7 @@ function GamePlay({
   const pierceUntilRef = useRef(0)
   const diagonalWireUntilRef = useRef(0)
   const spikeArmorUntilRef = useRef(0)
+  const aiHelperUntilRef = useRef(0)
   const barrierCountRef = useRef(0)
   const portalCooldownsRef = useRef(new Map<number, number>())
   const buffsDisplayRef = useRef<BuffDisplay>(NO_BUFFS)
@@ -2321,6 +2332,7 @@ function GamePlay({
       clearedAtRef.current = null
       pendingClearScoreRef.current = null
       destroyedPlatformsRef.current = new Set()
+      crittersKilledRef.current = new Set()
       particlesRef.current = []
       popupsRef.current = []
       pickupEffectsRef.current = []
@@ -2344,6 +2356,7 @@ function GamePlay({
       pierceUntilRef.current = 0
       diagonalWireUntilRef.current = 0
       spikeArmorUntilRef.current = 0
+      aiHelperUntilRef.current = 0
       barrierCountRef.current = 0
       portalCooldownsRef.current.clear()
       hiddenFinaleStartedAtRef.current = performance.now()
@@ -2438,6 +2451,7 @@ function GamePlay({
     pierceUntilRef.current += pausedFor
     diagonalWireUntilRef.current += pausedFor
     spikeArmorUntilRef.current += pausedFor
+    aiHelperUntilRef.current += pausedFor
     lastHitAtRef.current += pausedFor
     hiddenFinaleStartedAtRef.current += pausedFor
     harpoonsRef.current = harpoonsRef.current.map((harpoon) => ({
@@ -3316,6 +3330,54 @@ function GamePlay({
               .filter((p): p is Obstacle => p !== null)
           }
 
+          // The roaming critter can be killed with a harpoon hit — an
+          // unkillable hazard that just keeps crawling forever is a pure
+          // reflex tax with no counterplay, so give it a hitbox and let it
+          // go down like anything else.
+          if (stageCritters && stageCritters.length > 0) {
+            const survivingHarpoons: Harpoon[] = []
+            for (const harpoon of harpoonsRef.current) {
+              const hitIndex =
+                harpoon.kind === 'powerWire'
+                  ? -1
+                  : stageCritters.findIndex(
+                      (critter, i) =>
+                        !crittersKilledRef.current.has(i) &&
+                        harpoonHitsCritter(
+                          harpoon.x,
+                          harpoon.y,
+                          getCritterX(critter, time),
+                          harpoon.kind === 'vulcan' ||
+                            harpoon.kind === 'diagonal'
+                            ? harpoon.y
+                            : (harpoon.baseY ?? PLAYER_Y),
+                        ),
+                    )
+              if (hitIndex === -1) {
+                survivingHarpoons.push(harpoon)
+                continue
+              }
+              crittersKilledRef.current.add(hitIndex)
+              const critterX = getCritterX(stageCritters[hitIndex], time)
+              const gained = Math.round(
+                SCORE_BY_LEVEL[0] * (1 + comboRef.current * 0.1),
+              )
+              scoreRef.current = addToTotalScore(scoreRef.current, gained)
+              setScore(scoreRef.current)
+              spawnBurst(particlesRef.current, critterX, PLAYER_Y, '#65a30d')
+              popupsRef.current.push({
+                x: critterX,
+                y: PLAYER_Y - 14,
+                text: `+${gained}`,
+                life: 700,
+                maxLife: 700,
+                color: '#65a30d',
+              })
+              playHitSound(1)
+            }
+            harpoonsRef.current = survivingHarpoons
+          }
+
           harpoonsRef.current = harpoonsRef.current.filter((harpoon) => {
             if (harpoon.kind === 'powerWire') {
               return (harpoon.expiresAt ?? 0) > time
@@ -3480,7 +3542,10 @@ function GamePlay({
             harpoonsRef.current = remainingHarpoons
           }
 
-          if (settings.aiCompanion && !demo) {
+          if (
+            (settings.aiCompanion || time < aiHelperUntilRef.current) &&
+            !demo
+          ) {
             // Chase the nearest ball inside its own lane, or drift back to
             // the lane's center when there's nothing there to shoot at.
             const laneTargetBall = ballsRef.current
@@ -3594,12 +3659,14 @@ function GamePlay({
               }) ??
                 false)
             const hitByCritter =
-              stageCritters?.some((critter) =>
-                critterHitsPlayer(
-                  getCritterX(critter, time),
-                  playerXRef.current,
-                  playerYRef.current,
-                ),
+              stageCritters?.some(
+                (critter, i) =>
+                  !crittersKilledRef.current.has(i) &&
+                  critterHitsPlayer(
+                    getCritterX(critter, time),
+                    playerXRef.current,
+                    playerYRef.current,
+                  ),
               ) ?? false
             // Spike Armor turns body contact into an attack instead of
             // damage — it only changes what touching a BALL does; fire
@@ -3800,6 +3867,9 @@ function GamePlay({
                 break
               case 'spikeArmor':
                 spikeArmorUntilRef.current = time + SPIKE_ARMOR_DURATION_MS
+                break
+              case 'aiHelper':
+                aiHelperUntilRef.current = time + AI_HELPER_DURATION_MS
                 break
               case 'timePlus':
                 timeRemainingRef.current += TIME_PLUS_SECONDS
@@ -4012,6 +4082,10 @@ function GamePlay({
             0,
             Math.ceil((spikeArmorUntilRef.current - time) / 1000),
           )
+          const aiHelperSec = Math.max(
+            0,
+            Math.ceil((aiHelperUntilRef.current - time) / 1000),
+          )
           const barrierCount = barrierCountRef.current
           const prevBuffs = buffsDisplayRef.current
           if (
@@ -4036,6 +4110,7 @@ function GamePlay({
             prevBuffs.pierce !== pierceSec ||
             prevBuffs.diagonalWire !== diagonalWireSec ||
             prevBuffs.spikeArmor !== spikeArmorSec ||
+            prevBuffs.aiHelper !== aiHelperSec ||
             prevBuffs.barrier !== barrierCount
           ) {
             const nextBuffs: BuffDisplay = {
@@ -4060,6 +4135,7 @@ function GamePlay({
               pierce: pierceSec,
               diagonalWire: diagonalWireSec,
               spikeArmor: spikeArmorSec,
+              aiHelper: aiHelperSec,
               barrier: barrierCount,
             }
             buffsDisplayRef.current = nextBuffs
@@ -4205,7 +4281,12 @@ function GamePlay({
       }
       if (iceWind) drawIceGusts(ctx, getIceWindPush(iceWind, time), time)
       if (fireZones) drawFireZones(ctx, fireZones, time)
-      if (stageCritters) drawCritters(ctx, stageCritters, time)
+      if (stageCritters) {
+        const aliveCritters = stageCritters.filter(
+          (_, i) => !crittersKilledRef.current.has(i),
+        )
+        drawCritters(ctx, aliveCritters, time)
+      }
       if (stageChaosFireZones) drawFireZones(ctx, stageChaosFireZones, time)
       if (stageChaosCurrent) {
         drawCurrentFlow(ctx, getCurrentWindAx(stageChaosCurrent, time), time)
@@ -4230,7 +4311,7 @@ function GamePlay({
         drawHarpoon(ctx, h, time)
       }
 
-      if (settings.aiCompanion && !demo) {
+      if ((settings.aiCompanion || time < aiHelperUntilRef.current) && !demo) {
         for (const h of companionHarpoonsRef.current) {
           drawHarpoon(ctx, h, time)
         }

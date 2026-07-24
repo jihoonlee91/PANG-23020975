@@ -318,7 +318,7 @@ describe('rollItemDrop', () => {
   it('can select the last item in the weighted pool', () => {
     const values = [0, 0.999]
     const rand = () => values.shift() ?? 0
-    expect(rollItemDrop(rand)).toBe('spikeArmor')
+    expect(rollItemDrop(rand)).toBe('aiHelper')
   })
 
   it('draws from a custom weight table when one is passed', () => {

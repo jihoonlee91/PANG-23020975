@@ -338,6 +338,7 @@ export const ITEM_WEIGHTS: [ItemType, number][] = [
   ['starBalloon', 3],
   ['diagonalWire', 12],
   ['spikeArmor', 7],
+  ['aiHelper', 8],
 ]
 
 // Vulcan (rapid-fire) was originally always in the pool, but it trivializes
@@ -484,6 +485,11 @@ export const DIAGONAL_HARPOON_VX = 220
 // offensive twist on Invincible/Barrier rather than another pure
 // defensive buff.
 export const SPIKE_ARMOR_DURATION_MS = 8000
+// A temporary version of the AI Companion settings toggle — picking this
+// up spawns the same helper drone for a limited window, a rescue chance
+// for a rough stretch rather than a standing assist the player has to
+// opt into ahead of time.
+export const AI_HELPER_DURATION_MS = 12000
 
 // Golden Ball: a small universal chance for a stage's initial balls to
 // spawn golden instead of their normal color. Popping one (at any size)

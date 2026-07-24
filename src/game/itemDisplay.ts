@@ -29,6 +29,7 @@ export const ITEM_COLORS: Record<ItemType, string> = {
   starBalloon: '#fde047',
   diagonalWire: '#38bdf8',
   spikeArmor: '#f472b6',
+  aiHelper: '#38bdf8',
 }
 
 export const ITEM_TITLES: Record<ItemType, string> = {
@@ -60,6 +61,7 @@ export const ITEM_TITLES: Record<ItemType, string> = {
   starBalloon: 'Star Balloon',
   diagonalWire: 'Diagonal Wire',
   spikeArmor: 'Spike Armor',
+  aiHelper: 'AI Helper',
 }
 
 export const ITEM_DESCRIPTIONS: Record<ItemType, string> = {
@@ -92,6 +94,7 @@ export const ITEM_DESCRIPTIONS: Record<ItemType, string> = {
   starBalloon: '화면의 모든 공을 즉시 제거하고 점수를 얻습니다.',
   diagonalWire: '10초 동안 작살이 좌우 45도 대각선으로 2발 발사됩니다.',
   spikeArmor: '8초 동안 공에 몸으로 닿으면 피해 대신 공을 터뜨립니다.',
+  aiHelper: '12초 동안 AI 도우미 드론이 등장해 대신 공을 맞혀줍니다.',
 }
 
 function traceShield(ctx: CanvasRenderingContext2D, scale = 1) {
@@ -571,6 +574,24 @@ export function drawFallingItemIcon(
         ctx.closePath()
         ctx.fill()
         ctx.restore()
+      }
+      break
+    case 'aiHelper':
+      ctx.beginPath()
+      ctx.ellipse(0, 0, 11, 6.5, 0, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.stroke()
+      ctx.fillStyle = '#bae6fd'
+      ctx.beginPath()
+      ctx.arc(0, -2, 3.5, 0, Math.PI * 2)
+      ctx.fill()
+      ctx.strokeStyle = color
+      ctx.lineWidth = 1.5
+      for (const side of [-1, 1]) {
+        ctx.beginPath()
+        ctx.moveTo(side * 7, 2.5)
+        ctx.lineTo(side * 12, 7)
+        ctx.stroke()
       }
       break
     case 'spikeArmor':

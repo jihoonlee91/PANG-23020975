@@ -59,6 +59,27 @@ export function getCritterX(critter: Critter, elapsedMs: number): number {
   return critter.minX + t * (critter.maxX - critter.minX)
 }
 
+// Segment check, same model as harpoonHitsBall in engine.ts — the harpoon
+// is a vertical line from its base (normally the player, PLAYER_Y) up to
+// its current tip, so a rising shot can sweep through the critter's
+// ground-level hitbox instead of only counting a hit at the exact instant
+// the tip passes through. Lets the critter be killed rather than only ever
+// dodged, which is the whole point: an unkillable hazard that just keeps
+// crawling forever is a pure reflex tax, not a puzzle.
+export function harpoonHitsCritter(
+  harpoonX: number,
+  harpoonTipY: number,
+  critterX: number,
+  harpoonBaseY = PLAYER_Y,
+): boolean {
+  const segmentTop = Math.min(harpoonTipY, harpoonBaseY)
+  const segmentBottom = Math.max(harpoonTipY, harpoonBaseY)
+  const closestY = Math.min(Math.max(PLAYER_Y, segmentTop), segmentBottom)
+  const dx = critterX - harpoonX
+  const dy = PLAYER_Y - closestY
+  return dx * dx + dy * dy <= CRITTER_RADIUS * CRITTER_RADIUS
+}
+
 export function critterHitsPlayer(
   critterX: number,
   playerX: number,

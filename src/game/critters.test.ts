@@ -4,6 +4,7 @@ import {
   critterHitsPlayer,
   getCritterX,
   getStageCritters,
+  harpoonHitsCritter,
 } from './critters'
 import { PLAYER_Y } from './constants'
 
@@ -43,5 +44,18 @@ describe('critterHitsPlayer', () => {
 
   it('misses when the critter is far from the player', () => {
     expect(critterHitsPlayer(400, 700, PLAYER_Y)).toBe(false)
+  })
+})
+
+describe('harpoonHitsCritter', () => {
+  it('hits when a rising harpoon sweeps through the critter at ground level', () => {
+    // Harpoon fired from the ground (baseY=PLAYER_Y) up to some tip above
+    // it — the segment from tip to base passes through the critter's
+    // ground-level hitbox even though the tip itself is well above it.
+    expect(harpoonHitsCritter(400, PLAYER_Y - 200, 400, PLAYER_Y)).toBe(true)
+  })
+
+  it('misses when the harpoon is far to the side', () => {
+    expect(harpoonHitsCritter(100, PLAYER_Y - 200, 700, PLAYER_Y)).toBe(false)
   })
 })

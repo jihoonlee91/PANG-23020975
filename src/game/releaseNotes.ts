@@ -9,6 +9,14 @@ export type ReleaseNote = {
 // recent releases are kept; older entries can be dropped.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.30.0',
+    date: '2026-07-24',
+    notes: [
+      'The roaming critter can now be killed with a harpoon hit instead of only ever being something to dodge forever.',
+      'New item: AI Helper. Picking it up spawns the AI Companion drone for 12 seconds even if you have the setting off — a rescue chance for a rough stretch.',
+    ],
+  },
+  {
     version: '1.29.0',
     date: '2026-07-24',
     notes: [
