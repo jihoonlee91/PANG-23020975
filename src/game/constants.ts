@@ -24,7 +24,7 @@ export const LEVEL_BOUNCE_SPEED = [320, 390, 460]
 export const SPLIT_VY_BASE = 250
 export const SPLIT_VY_PER_LEVEL = 150
 
-export const MAX_HP = 3
+export const MAX_HP = 4
 export const INVULN_MS = 1200
 // Grace period at the start of a stage so a ball already in flight can't
 // hit the player the instant control begins.
@@ -312,7 +312,11 @@ export function getStageItemDropChance(stageIndex: number): number {
     0,
     Math.min(STAGE_COUNT - 1, Math.floor(stageIndex)),
   )
-  return Math.max(0.08, ITEM_DROP_CHANCE - normalizedStage * 0.002)
+  // Floored at 0.10 (was 0.08): power-up support stays a bit more generous
+  // through the hazard-dense back half (stage 30 on, where the decay
+  // otherwise bottoms out) so the difficulty ramp doesn't outpace the tools
+  // the player gets to answer it.
+  return Math.max(0.1, ITEM_DROP_CHANCE - normalizedStage * 0.002)
 }
 // Relative weights within a drop: double wire/clock/hourglass/barrier are common,
 // 1UP and dynamite are intentionally rare (dynamite is a risk item, 1UP is a reward item).

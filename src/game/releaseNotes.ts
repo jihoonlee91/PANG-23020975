@@ -9,6 +9,13 @@ export type ReleaseNote = {
 // recent releases are kept; older entries can be dropped.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.32.0',
+    date: '2026-07-25',
+    notes: [
+      'Eased the difficulty a bit: you now start each stage with 4 HP instead of 3, and power-ups drop a little more often through the tougher late-game stages.',
+    ],
+  },
+  {
     version: '1.31.1',
     date: '2026-07-25',
     notes: [
