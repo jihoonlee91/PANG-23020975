@@ -85,7 +85,7 @@ import {
 } from './game/portals'
 import { getBreezeWindAx, getStageBreeze } from './game/breeze'
 import { getCurrentWindAx, getStageCurrent } from './game/currents'
-import { getStageGravityWell } from './game/gravityWells'
+import { getStageGravityWell, type GravityWell } from './game/gravityWells'
 import { getStageNebulaWells } from './game/nebulae'
 import { getStageVortex } from './game/vortices'
 import {
@@ -1530,39 +1530,6 @@ const PLAYER_PALETTES: Record<PlayerTheme, PlayerPalette> = {
   },
 }
 
-function drawCompanionDrone(
-  ctx: CanvasRenderingContext2D,
-  x: number,
-  y: number,
-  time: number,
-) {
-  const bob = Math.sin(time / 260) * 4
-  ctx.save()
-  ctx.translate(x, y - 30 + bob)
-  ctx.shadowColor = '#38bdf8'
-  ctx.shadowBlur = 14
-  ctx.fillStyle = '#0c4a6e'
-  ctx.beginPath()
-  ctx.ellipse(0, 0, 16, 9, 0, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.strokeStyle = '#7dd3fc'
-  ctx.lineWidth = 2
-  ctx.stroke()
-  ctx.fillStyle = '#bae6fd'
-  ctx.beginPath()
-  ctx.arc(0, -3, 5, 0, Math.PI * 2)
-  ctx.fill()
-  ctx.strokeStyle = '#38bdf8'
-  ctx.lineWidth = 1.5
-  for (const side of [-1, 1]) {
-    ctx.beginPath()
-    ctx.moveTo(side * 10, 4)
-    ctx.lineTo(side * 16, 12 + Math.sin(time / 150 + side) * 2)
-    ctx.stroke()
-  }
-  ctx.restore()
-}
-
 function drawPlayerShip(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -2055,17 +2022,13 @@ const AI_FLOOD_BALL_COUNT = 10
 // while a fired wire climbs. Balls farther out than this can't be hit and
 // skip the full simulation entirely.
 const AI_PREFILTER_DRIFT_SLACK = 160
-// The AI Companion (an opt-in assist setting) patrols a fixed lane on the
-// right side of the arena rather than the whole width — it should help
-// without crowding out the player's own space or looking like a second
-// full player. It fires its own simple, independent harpoon: no weapon
-// items, no combo credit, reduced score — clearly a helper, not a way to
-// double the player's output.
-const COMPANION_LANE_MIN = CANVAS_WIDTH * 0.62
-const COMPANION_LANE_MAX = CANVAS_WIDTH - PLAYER_WIDTH / 2
+// The AI Companion (an opt-in assist setting) is a second on-screen body
+// that roams the full arena and fights using the same decision logic as
+// "Watch AI Play" (see computeAiDecision below) — just with its own
+// independent harpoon slot (capped at 1, no weapon items), no combo
+// credit, and reduced score, so it clearly reads as a helper rather than a
+// way to double the player's own output.
 const COMPANION_SPEED = 220
-const COMPANION_FIRE_COOLDOWN_MS = 500
-const COMPANION_AIM_TOLERANCE = 16
 const COMPANION_SCORE_MULTIPLIER = 0.5
 const HIT_EFFECT_MS = 350
 // A first-ever stage clear crossfades the background from the Canvas
@@ -2128,6 +2091,252 @@ const NO_BUFFS: BuffDisplay = {
   diagonalWire: 0,
   spikeArmor: 0,
   aiHelper: 0,
+}
+
+// Shared world state read by computeAiDecision below. Everything here is
+// the same regardless of which body (the real player in demo mode, or the
+// AI Companion clone) is asking for a decision — only the "self" position
+// and harpoon bookkeeping differ per caller.
+type AiWorld = {
+  balls: readonly Ball[]
+  items: readonly Item[]
+  activePlatforms: readonly Obstacle[]
+  windAx: number
+  gravityWell: GravityWell | readonly GravityWell[] | undefined
+  gravityScale: number
+  ballTimeScale: number
+  playerSpeed: number
+  harpoonSpeed: number
+  isPowerWireActive: boolean
+  isClockActive: boolean
+  isInvincibleActive: boolean
+  isOverdriveActive: boolean
+  barrierCount: number
+  timeRemaining: number
+  jitterStrength: number | null
+  // Fire-zone + acid-rain danger zones, precomputed once per fixed step by
+  // the caller (they don't depend on which body is asking).
+  hazardDangerZones: readonly DangerZone[]
+  bounds: { min: number; max: number }
+  // Demo mode chases worthwhile item drops; the Companion clone (see
+  // GamePlay's "Behavior scope" design note) sticks to balls and hazards
+  // only, so it never competes with the real player for pickups.
+  includeItemDetour: boolean
+}
+
+type AiDecision = {
+  moveTargetX: number
+  left: boolean
+  right: boolean
+  fire: boolean
+  targetBallId: number | null
+}
+
+/**
+ * The "Watch AI Play" brain, extracted so it can drive an arbitrary body —
+ * the single player entity in demo mode, or the AI Companion clone running
+ * alongside a real human player. Takes the asking body's own position and
+ * harpoon bookkeeping as parameters, plus a `targetIdRef` for that body's
+ * own retarget-hysteresis (demo mode and the Companion each keep a
+ * separate one, so their target locks never interfere with each other).
+ * Everything else is shared world state the caller has already computed
+ * once this fixed step.
+ *
+ * Pure aside from mutating `targetIdRef.current`.
+ */
+function computeAiDecision(
+  selfX: number,
+  selfY: number,
+  harpoonCount: number,
+  maxHarpoons: number,
+  targetIdRef: { current: number | null },
+  env: AiWorld,
+): AiDecision {
+  // Forward-simulate every ball with the real physics — one pass per ball
+  // yields both its next low point (for aiming) and every moment its path
+  // dips into the asking body's row (for dodging).
+  const selfBandTopY = selfY - PLAYER_HEIGHT / 2
+  const predictions = env.balls.map((b) => {
+    const threat = predictBallThreats(
+      b,
+      selfBandTopY,
+      1.5,
+      1 / 60,
+      env.activePlatforms,
+      env.windAx,
+      env.gravityWell,
+      env.ballTimeScale,
+      env.gravityScale,
+    )
+    return {
+      ball: b,
+      ...threat,
+      shotLane: findBestHarpoonLane(b, threat.x, selfX, {
+        bounds: env.bounds,
+        playerSpeed: env.playerSpeed,
+        baseY: selfY,
+        harpoonSpeed: env.harpoonSpeed,
+        obstacles: env.activePlatforms,
+        windAx: env.windAx,
+        well: env.gravityWell,
+        ballTimeScale: env.ballTimeScale,
+        gravityScale: env.gravityScale,
+      }),
+    }
+  })
+
+  // Pick the shooting target by real time-to-kill, with retarget
+  // hysteresis (AI_RETARGET_MARGIN_SEC) to kill frame-to-frame thrash
+  // between two similarly-placed balls.
+  const shootablePredictions = predictions.filter((p) => p.shotLane !== null)
+  const targetCandidates =
+    shootablePredictions.length > 0 ? shootablePredictions : predictions
+  const shotCost = (p: (typeof predictions)[number]) =>
+    p.shotLane?.cost ??
+    Math.max(p.time, Math.abs(p.x - selfX) / env.playerSpeed) + 2
+  let targetPrediction = targetCandidates.reduce<
+    (typeof predictions)[number] | null
+  >((best, p) => (!best || shotCost(p) < shotCost(best) ? p : best), null)
+  const stickyPrediction =
+    targetCandidates.find((p) => p.ball.id === targetIdRef.current) ?? null
+  if (
+    targetPrediction &&
+    stickyPrediction &&
+    shotCost(targetPrediction) >
+      shotCost(stickyPrediction) - AI_RETARGET_MARGIN_SEC
+  ) {
+    targetPrediction = stickyPrediction
+  }
+  targetIdRef.current = targetPrediction?.ball.id ?? null
+  const target = targetPrediction?.ball ?? null
+
+  // Items are only worth a detour when physically catchable, and only for
+  // callers that opt in (the Companion clone never chases items — see
+  // AiWorld.includeItemDetour).
+  let itemTarget: Item | null = null
+  let itemTargetCatchSec = Infinity
+  if (env.includeItemDetour) {
+    const remainingPops = countRemainingPops(env.balls)
+    const underTimePressure =
+      env.timeRemaining < remainingPops * AI_TIME_PRESSURE_SEC_PER_POP
+    const leafBallCount = env.balls.reduce((sum, b) => sum + 2 ** b.level, 0)
+    const explosiveSafe =
+      leafBallCount <= AI_EXPLOSIVE_MAX_LEAVES ||
+      env.isClockActive ||
+      env.isInvincibleActive ||
+      env.isOverdriveActive ||
+      env.barrierCount > 0
+    for (const item of env.items) {
+      if (underTimePressure && !AI_CLUTCH_ITEMS.has(item.type)) continue
+      if (
+        (item.type === 'dynamite' || item.type === 'shockwave') &&
+        !explosiveSafe
+      ) {
+        continue
+      }
+      const catchSec = itemCatchSeconds(item, selfY)
+      const travelSec =
+        Math.max(0, Math.abs(item.x - selfX) - PLAYER_WIDTH / 2) /
+        env.playerSpeed
+      if (travelSec > catchSec) continue
+      if (catchSec < itemTargetCatchSec) {
+        itemTarget = item
+        itemTargetCatchSec = catchSec
+      }
+    }
+  }
+
+  // Clock freezes every ball in place and grants damage immunity, so the
+  // "transit exposure" risk flooding exists to avoid is zero — parking
+  // instead of hunting down each frozen ball would waste the window.
+  const flooded =
+    !env.isClockActive &&
+    !env.isInvincibleActive &&
+    !env.isOverdriveActive &&
+    env.balls.length >= AI_FLOOD_BALL_COUNT
+  const desiredX = flooded
+    ? selfX
+    : itemTarget !== null
+      ? itemTarget.x
+      : (targetPrediction?.shotLane?.x ?? targetPrediction?.x ?? selfX)
+
+  // The ball about to be shot isn't a hazard to route around — it's the
+  // plan — so its later threats are dropped while a harpoon slot is
+  // actually free to take the shot; its imminent ones stay (reflex escape
+  // still has to fire).
+  const canEngageTarget = harpoonCount < maxHarpoons
+  const ballDodgeBuffer =
+    AI_DODGE_BUFFER +
+    (env.jitterStrength !== null ? AI_RIFT_EXTRA_DODGE_BUFFER : 0)
+  const dangerZones: DangerZone[] = [
+    ...predictions.flatMap((p) => {
+      const engaged =
+        canEngageTarget && target !== null && p.ball.id === target.id
+      const threats = engaged
+        ? p.threats.filter((threat) => threat.time <= AI_REFLEX_SEC)
+        : p.threats
+      return threats.map((threat) => ({
+        x: threat.x,
+        time: threat.time,
+        radius: LEVEL_RADIUS[p.ball.level] + PLAYER_WIDTH / 2 + ballDodgeBuffer,
+      }))
+    }),
+    ...env.hazardDangerZones,
+  ]
+
+  // While invincible, nothing is actually a threat — go straight for the
+  // goal instead of routing around ghosts.
+  const moveTargetX =
+    itemTarget !== null || target !== null
+      ? env.isClockActive || env.isInvincibleActive || env.isOverdriveActive
+        ? desiredX
+        : chooseSafeX(desiredX, selfX, dangerZones, env.bounds, {
+            playerSpeed: env.playerSpeed,
+            // Dodge horizon matched to the 1.5s prediction window so
+            // freshly-split children arcing back down are routed around
+            // before they arrive, not once they're already overhead.
+            dodgeHorizonSec: 1.4,
+            immediateDangerSec: AI_REFLEX_SEC,
+            maxTravelPx: env.playerSpeed * 1.4,
+          })
+      : selfX
+
+  const left = moveTargetX < selfX - AI_DEADZONE
+  const right = moveTargetX > selfX + AI_DEADZONE
+
+  // Fire the moment a shot would actually land — verified by simulating a
+  // wire fired from the current x this frame against every ball's real
+  // physics, not by rough current-x alignment.
+  let fire = false
+  if (harpoonCount < maxHarpoons) {
+    if (env.isPowerWireActive) {
+      // Power Wire is an instant full-height line that stays up, so the
+      // sim degenerates to: does a ball overlap it now?
+      const stopY = getPowerHarpoonStopY(selfX, env.activePlatforms, selfY)
+      fire = env.balls.some((b) => harpoonHitsBall(selfX, stopY, b, selfY))
+    } else {
+      const climbSec = selfY / env.harpoonSpeed
+      fire = env.balls.some((b) => {
+        const reach =
+          LEVEL_RADIUS[b.level] +
+          (Math.abs(b.vx) + AI_PREFILTER_DRIFT_SLACK) * climbSec
+        if (Math.abs(b.x - selfX) > reach) return false
+        return (
+          predictHarpoonHit(b, selfX, {
+            baseY: selfY,
+            harpoonSpeed: env.harpoonSpeed,
+            obstacles: env.activePlatforms,
+            windAx: env.windAx,
+            well: env.gravityWell,
+            ballTimeScale: env.ballTimeScale,
+            gravityScale: env.gravityScale,
+          }) !== null
+        )
+      })
+    }
+  }
+
+  return { moveTargetX, left, right, fire, targetBallId: target?.id ?? null }
 }
 
 function GamePlay({
@@ -2220,9 +2429,13 @@ function GamePlay({
   const playerMovingUntilRef = useRef(0)
   const ballsRef = useRef<Ball[]>(createStage(stageIndex))
   const harpoonsRef = useRef<Harpoon[]>([])
-  const companionXRef = useRef((COMPANION_LANE_MIN + COMPANION_LANE_MAX) / 2)
+  const companionXRef = useRef(CANVAS_WIDTH / 2)
+  const companionYRef = useRef(PLAYER_Y)
+  const companionVxRef = useRef(0)
+  const companionFacingRef = useRef<-1 | 1>(1)
+  const companionMovingUntilRef = useRef(0)
+  const companionLastFireAtRef = useRef(0)
   const companionHarpoonsRef = useRef<Harpoon[]>([])
-  const companionCooldownRef = useRef(0)
   const itemsRef = useRef<Item[]>([])
   const hpRef = useRef(MAX_HP)
   const invulnUntilRef = useRef(0)
@@ -2289,6 +2502,10 @@ function GamePlay({
   const aiKeysDisplayRef = useRef({ left: false, right: false, fire: false })
   // Sticky shooting-target id for the AI (see AI_RETARGET_MARGIN_SEC).
   const aiTargetIdRef = useRef<number | null>(null)
+  // Separate retarget-hysteresis lock for the AI Companion clone, kept
+  // independent of aiTargetIdRef so the two never fight over which ball
+  // "belongs" to which body.
+  const companionTargetIdRef = useRef<number | null>(null)
 
   const [hp, setHp] = useState(MAX_HP)
   const [hpPulseKey, setHpPulseKey] = useState(0)
@@ -2320,9 +2537,14 @@ function GamePlay({
         Math.random() < GOLDEN_BALL_CHANCE ? { ...ball, golden: true } : ball,
       )
       harpoonsRef.current = []
-      companionXRef.current = (COMPANION_LANE_MIN + COMPANION_LANE_MAX) / 2
+      companionXRef.current = CANVAS_WIDTH / 2
+      companionYRef.current = PLAYER_Y
+      companionVxRef.current = 0
+      companionFacingRef.current = 1
+      companionMovingUntilRef.current = 0
+      companionLastFireAtRef.current = 0
       companionHarpoonsRef.current = []
-      companionCooldownRef.current = 0
+      companionTargetIdRef.current = null
       itemsRef.current = []
       hpRef.current = MAX_HP
       invulnUntilRef.current = performance.now() + STAGE_START_INVULN_MS
@@ -2843,7 +3065,13 @@ function GamePlay({
             }
           }
 
-          if (demo) {
+          const isCompanionActive =
+            (settings.aiCompanion || time < aiHelperUntilRef.current) && !demo
+
+          // Shared setup for both the demo-mode AI and the AI Companion
+          // clone — computed at most once per fixed step, and only when
+          // something actually needs it.
+          if (demo || isCompanionActive) {
             // Match the ball forward-simulation to whatever's actually
             // slowing/freezing balls in real gameplay right now, so a
             // Clock or Hourglass pickup doesn't leave the AI's own
@@ -2853,161 +3081,6 @@ function GamePlay({
               : isHourglassActive
                 ? HOURGLASS_SLOW_FACTOR
                 : 1
-
-            // Forward-simulate every ball with the real physics — one pass
-            // per ball yields both its next low point (for aiming) and
-            // every moment its path dips into the player band (for
-            // dodging). The full threat sweep matters: a ball crossing the
-            // player's row between bounces never has a "low point" nearby,
-            // yet absolutely can hit on the way through.
-            const playerBandTopY = playerYRef.current - PLAYER_HEIGHT / 2
-            const aiHarpoonSpeed = isVulcanActive ? VULCAN_SPEED : HARPOON_SPEED
-            const predictions = ballsRef.current.map((b) => {
-              const threat = predictBallThreats(
-                b,
-                playerBandTopY,
-                1.5,
-                1 / 60,
-                activePlatforms,
-                windAx,
-                activeGravityWell,
-                ballTimeScale,
-                activeGravityScale,
-              )
-              return {
-                ball: b,
-                ...threat,
-                shotLane: findBestHarpoonLane(b, threat.x, playerXRef.current, {
-                  bounds: {
-                    min: PLAYER_WIDTH / 2,
-                    max: CANVAS_WIDTH - PLAYER_WIDTH / 2,
-                  },
-                  playerSpeed,
-                  baseY: playerYRef.current,
-                  harpoonSpeed: aiHarpoonSpeed,
-                  obstacles: activePlatforms,
-                  windAx,
-                  well: activeGravityWell,
-                  ballTimeScale,
-                  gravityScale: activeGravityScale,
-                }),
-              }
-            })
-            // Pick the shooting target by real time-to-kill — bounded by
-            // both the ball's arrival at its low point and the AI's own
-            // travel time to get under it, so a ball landing soon but
-            // across the map no longer beats a nearby one. The current
-            // target is kept unless a challenger is clearly better
-            // (AI_RETARGET_MARGIN_SEC), killing frame-to-frame retarget
-            // thrash between two similarly-placed balls.
-            const shootablePredictions = predictions.filter(
-              (p) => p.shotLane !== null,
-            )
-            const targetCandidates =
-              shootablePredictions.length > 0
-                ? shootablePredictions
-                : predictions
-            const shotCost = (p: (typeof predictions)[number]) =>
-              p.shotLane?.cost ??
-              Math.max(
-                p.time,
-                Math.abs(p.x - playerXRef.current) / playerSpeed,
-              ) + 2
-            let targetPrediction = targetCandidates.reduce<
-              (typeof predictions)[number] | null
-            >(
-              (best, p) => (!best || shotCost(p) < shotCost(best) ? p : best),
-              null,
-            )
-            const stickyPrediction =
-              targetCandidates.find(
-                (p) => p.ball.id === aiTargetIdRef.current,
-              ) ?? null
-            if (
-              targetPrediction &&
-              stickyPrediction &&
-              shotCost(targetPrediction) >
-                shotCost(stickyPrediction) - AI_RETARGET_MARGIN_SEC
-            ) {
-              targetPrediction = stickyPrediction
-            }
-            aiTargetIdRef.current = targetPrediction?.ball.id ?? null
-            const target = targetPrediction?.ball ?? null
-
-            // Items are only worth a detour when physically catchable —
-            // reachable at the current (flare-slowed/boosted) speed before
-            // they fall past the player row and despawn; chasing anything
-            // else is pure wasted travel. When behind the pace the
-            // remaining clock allows (per-pop time budget too thin), item
-            // detours stop entirely — except Time+, which directly buys
-            // the budget back.
-            const remainingPops = countRemainingPops(ballsRef.current)
-            const underTimePressure =
-              timeRemainingRef.current <
-              remainingPops * AI_TIME_PRESSURE_SEC_PER_POP
-            const leafBallCount = ballsRef.current.reduce(
-              (sum, b) => sum + 2 ** b.level,
-              0,
-            )
-            const explosiveSafe =
-              leafBallCount <= AI_EXPLOSIVE_MAX_LEAVES ||
-              isClockActive ||
-              isInvincibleActive ||
-              isOverdriveActive ||
-              barrierCountRef.current > 0
-            let itemTarget: Item | null = null
-            let itemTargetCatchSec = Infinity
-            for (const item of itemsRef.current) {
-              if (underTimePressure && !AI_CLUTCH_ITEMS.has(item.type)) continue
-              if (
-                (item.type === 'dynamite' || item.type === 'shockwave') &&
-                !explosiveSafe
-              ) {
-                continue
-              }
-              const catchSec = itemCatchSeconds(item, playerYRef.current)
-              const travelSec =
-                Math.max(
-                  0,
-                  Math.abs(item.x - playerXRef.current) - PLAYER_WIDTH / 2,
-                ) / playerSpeed
-              if (travelSec > catchSec) continue
-              if (catchSec < itemTargetCatchSec) {
-                itemTarget = item
-                itemTargetCatchSec = catchSec
-              }
-            }
-            // Clock freezes every ball in place and grants the same
-            // damage immunity as Invincible/Overdrive (see the hit-check
-            // gate below), so the "transit exposure" risk flooding exists
-            // to avoid is zero — parking instead of hunting down each
-            // frozen ball would waste the entire window.
-            const flooded =
-              !isClockActive &&
-              !isInvincibleActive &&
-              !isOverdriveActive &&
-              ballsRef.current.length >= AI_FLOOD_BALL_COUNT
-            const desiredX = flooded
-              ? playerXRef.current
-              : itemTarget !== null
-                ? itemTarget.x
-                : (targetPrediction?.shotLane?.x ??
-                  targetPrediction?.x ??
-                  playerXRef.current)
-
-            // The ball we're about to shoot isn't a hazard to route around —
-            // it's the plan. Excluding it (while a harpoon slot is actually
-            // free to take the shot) is what lets the AI walk right up to
-            // and under an incoming ball to line up an early kill, instead
-            // of treating its own target as forbidden ground and stalling
-            // out at a distance short of ever actually firing. (A
-            // time-margin cutoff was tried here — bail on engaging once the
-            // target gets "too close" — but it backfires: as soon as it
-            // flips, the movement search flees the very position the AI was
-            // about to fire from, aborting shots that were one frame from
-            // landing. Once harpoons are full and no shot is available, the
-            // target goes back to being a real threat like anything else.)
-            const canEngageTarget = harpoonsRef.current.length < maxHarpoons
             const activeFireZoneElapsedMs =
               activeHiddenFinalePhase?.fireZones !== null &&
               activeHiddenFinalePhase?.fireZones !== undefined
@@ -3044,136 +3117,179 @@ function GamePlay({
                 time: getAcidRainSecondsUntilActive(zone, time),
                 radius: zone.width / 2 + PLAYER_WIDTH / 2 + AI_DODGE_BUFFER,
               }))
-            // Phase-jumping balls (Quantum Rift) invalidate predictions on
-            // every jump — pad their no-go bands so the mid-frame jump a
-            // prediction can't see coming still lands outside the player.
-            const ballDodgeBuffer =
-              AI_DODGE_BUFFER +
-              (activeJitterStrength !== null ? AI_RIFT_EXTRA_DODGE_BUFFER : 0)
-            const dangerZones: DangerZone[] = [
-              ...predictions.flatMap((p) => {
-                // For the engaged target, standing in its future path IS
-                // the plan (the wire pops it first), so its later threats
-                // are dropped — but its imminent ones stay: a ball already
-                // at row height closing in touches the player's edge
-                // (half-width + radius out) before it ever crosses the
-                // centered wire (radius out), so the reflex escape must
-                // still fire. Retreating while the opportunistic fire
-                // below keeps shooting means the chaser runs into the
-                // wire left behind. Dropping ALL of its threats instead
-                // creates the opposite bug — a permanent standoff against
-                // a low-bouncing last ball whose own sweep blankets its
-                // landing spot, which the AI then never dares approach.
-                const engaged =
-                  canEngageTarget && target !== null && p.ball.id === target.id
-                const threats = engaged
-                  ? p.threats.filter((threat) => threat.time <= AI_REFLEX_SEC)
-                  : p.threats
-                return threats.map((threat) => ({
-                  x: threat.x,
-                  time: threat.time,
-                  radius:
-                    LEVEL_RADIUS[p.ball.level] +
-                    PLAYER_WIDTH / 2 +
-                    ballDodgeBuffer,
-                }))
-              }),
+            const hazardDangerZones: DangerZone[] = [
               ...fireZoneDangers,
               ...acidRainDangers,
             ]
-            // While invincible, nothing is actually a threat — go straight
-            // for the goal instead of routing around ghosts.
-            const moveTargetX =
-              itemTarget !== null || target !== null
-                ? isClockActive || isInvincibleActive || isOverdriveActive
-                  ? desiredX
-                  : chooseSafeX(
-                      desiredX,
-                      playerXRef.current,
-                      dangerZones,
-                      {
-                        min: PLAYER_WIDTH / 2,
-                        max: CANVAS_WIDTH - PLAYER_WIDTH / 2,
-                      },
-                      // Dodge horizon matched to the 1.5s prediction
-                      // window so freshly-split children arcing back down
-                      // are routed around before they arrive, not once
-                      // they're already overhead.
-                      {
-                        playerSpeed,
-                        dodgeHorizonSec: 1.4,
-                        immediateDangerSec: AI_REFLEX_SEC,
-                        // Candidates capped to what's honestly reachable
-                        // within the dodge horizon — stops the planner
-                        // from committing to a sprint through a wall of
-                        // descending balls toward a "safe" far edge.
-                        maxTravelPx: playerSpeed * 1.4,
-                      },
-                    )
-                : playerXRef.current
+            const bounds = {
+              min: PLAYER_WIDTH / 2,
+              max: CANVAS_WIDTH - PLAYER_WIDTH / 2,
+            }
 
-            const left = moveTargetX < playerXRef.current - AI_DEADZONE
-            const right = moveTargetX > playerXRef.current + AI_DEADZONE
-            // Fire the moment a shot would actually land — verified by
-            // simulating a wire fired from the current x this frame
-            // against every ball's real physics (predictHarpoonHit), not
-            // by rough current-x alignment. Checked against every ball,
-            // not just the chosen target, and with no "settled" gate, so
-            // targets of opportunity get sniped mid-stride while
-            // repositioning. A cheap horizontal prefilter skips balls that
-            // couldn't possibly drift into the wire's column during its
-            // climb.
-            let fire = false
-            if (harpoonsRef.current.length < maxHarpoons) {
-              if (isPowerWireActive) {
-                // Power Wire is an instant full-height line that stays up,
-                // so the sim degenerates to: does a ball overlap it now?
-                const stopY = getPowerHarpoonStopY(
-                  playerXRef.current,
+            if (demo) {
+              const aiHarpoonSpeed = isVulcanActive
+                ? VULCAN_SPEED
+                : HARPOON_SPEED
+              const decision = computeAiDecision(
+                playerXRef.current,
+                playerYRef.current,
+                harpoonsRef.current.length,
+                maxHarpoons,
+                aiTargetIdRef,
+                {
+                  balls: ballsRef.current,
+                  items: itemsRef.current,
                   activePlatforms,
-                  playerYRef.current,
-                )
-                fire = ballsRef.current.some((b) =>
-                  harpoonHitsBall(
-                    playerXRef.current,
-                    stopY,
-                    b,
-                    playerYRef.current,
-                  ),
-                )
-              } else {
-                const climbSec = playerYRef.current / aiHarpoonSpeed
-                fire = ballsRef.current.some((b) => {
-                  const reach =
-                    LEVEL_RADIUS[b.level] +
-                    (Math.abs(b.vx) + AI_PREFILTER_DRIFT_SLACK) * climbSec
-                  if (Math.abs(b.x - playerXRef.current) > reach) return false
-                  return (
-                    predictHarpoonHit(b, playerXRef.current, {
-                      baseY: playerYRef.current,
-                      harpoonSpeed: aiHarpoonSpeed,
-                      obstacles: activePlatforms,
-                      windAx,
-                      well: activeGravityWell,
-                      ballTimeScale,
-                      gravityScale: activeGravityScale,
-                    }) !== null
-                  )
-                })
+                  windAx,
+                  gravityWell: activeGravityWell,
+                  gravityScale: activeGravityScale,
+                  ballTimeScale,
+                  playerSpeed,
+                  harpoonSpeed: aiHarpoonSpeed,
+                  isPowerWireActive,
+                  isClockActive,
+                  isInvincibleActive,
+                  isOverdriveActive,
+                  barrierCount: barrierCountRef.current,
+                  timeRemaining: timeRemainingRef.current,
+                  jitterStrength: activeJitterStrength,
+                  hazardDangerZones,
+                  bounds,
+                  includeItemDetour: true,
+                },
+              )
+              const { left, right, fire } = decision
+              inputRef.current.set('ai-left', 'left', left)
+              inputRef.current.set('ai-right', 'right', right)
+              inputRef.current.set('ai-fire', 'fire', fire)
+              const nextAiKeys = { left, right, fire }
+              const prevAiKeys = aiKeysDisplayRef.current
+              if (
+                prevAiKeys.left !== left ||
+                prevAiKeys.right !== right ||
+                prevAiKeys.fire !== fire
+              ) {
+                aiKeysDisplayRef.current = nextAiKeys
+                setAiKeys(nextAiKeys)
               }
             }
-            inputRef.current.set('ai-left', 'left', left)
-            inputRef.current.set('ai-right', 'right', right)
-            inputRef.current.set('ai-fire', 'fire', fire)
-            const nextAiKeys = { left, right, fire }
-            const prevAiKeys = aiKeysDisplayRef.current
-            if (
-              prevAiKeys.left !== left ||
-              prevAiKeys.right !== right ||
-              prevAiKeys.fire !== fire
-            ) {
-              aiKeysDisplayRef.current = nextAiKeys
-              setAiKeys(nextAiKeys)
+
+            if (isCompanionActive) {
+              // The clone fights and dodges with the same brain as demo
+              // mode, but never detours for items (includeItemDetour:
+              // false) and is capped at a single harpoon of the plain,
+              // non-buffed kind — it doesn't inherit the real player's
+              // picked-up weapon items.
+              const cloneMaxHarpoons = 1
+              const decision = computeAiDecision(
+                companionXRef.current,
+                companionYRef.current,
+                companionHarpoonsRef.current.length,
+                cloneMaxHarpoons,
+                companionTargetIdRef,
+                {
+                  balls: ballsRef.current,
+                  items: [],
+                  activePlatforms,
+                  windAx,
+                  gravityWell: activeGravityWell,
+                  gravityScale: activeGravityScale,
+                  ballTimeScale,
+                  playerSpeed: COMPANION_SPEED,
+                  harpoonSpeed: HARPOON_SPEED,
+                  isPowerWireActive: false,
+                  isClockActive,
+                  isInvincibleActive,
+                  isOverdriveActive,
+                  barrierCount: 0,
+                  timeRemaining: timeRemainingRef.current,
+                  jitterStrength: activeJitterStrength,
+                  hazardDangerZones,
+                  bounds,
+                  includeItemDetour: false,
+                },
+              )
+
+              const previousCompanionX = companionXRef.current
+              const cloneNextPosition = stepPlayerOnTerrain(
+                companionXRef.current,
+                companionYRef.current,
+                { left: decision.left, right: decision.right },
+                dtSec,
+                COMPANION_SPEED,
+                terrain,
+                companionVxRef.current,
+              )
+              companionXRef.current = cloneNextPosition.x
+              companionYRef.current = cloneNextPosition.y
+              companionVxRef.current = cloneNextPosition.vx
+              const cloneDeltaX = companionXRef.current - previousCompanionX
+              if (Math.abs(cloneDeltaX) > 0.05) {
+                companionFacingRef.current = cloneDeltaX < 0 ? -1 : 1
+                companionMovingUntilRef.current = time + 90
+              }
+
+              if (
+                decision.fire &&
+                companionHarpoonsRef.current.length < cloneMaxHarpoons
+              ) {
+                companionHarpoonsRef.current = [
+                  ...companionHarpoonsRef.current,
+                  {
+                    x: companionXRef.current,
+                    y: companionYRef.current,
+                    baseY: companionYRef.current,
+                  },
+                ]
+                companionLastFireAtRef.current = time
+              }
+
+              companionHarpoonsRef.current = companionHarpoonsRef.current
+                .map((h) => ({ ...h, y: h.y - HARPOON_SPEED * dtSec }))
+                .filter(
+                  (h) =>
+                    h.y > 20 && !harpoonHitsObstacle(h.x, h.y, activePlatforms),
+                )
+
+              if (companionHarpoonsRef.current.length > 0) {
+                const remainingCompanionHarpoons: Harpoon[] = []
+                for (const h of companionHarpoonsRef.current) {
+                  const hitIndex = ballsRef.current.findIndex((b) =>
+                    harpoonHitsBall(h.x, h.y, b, h.baseY ?? PLAYER_Y),
+                  )
+                  if (hitIndex === -1) {
+                    remainingCompanionHarpoons.push(h)
+                    continue
+                  }
+                  const hitBall = ballsRef.current[hitIndex]
+                  const children = splitBall(hitBall, nextId)
+                  const gained = Math.round(
+                    SCORE_BY_LEVEL[hitBall.level] * COMPANION_SCORE_MULTIPLIER,
+                  )
+                  scoreRef.current = addToTotalScore(scoreRef.current, gained)
+                  setScore(scoreRef.current)
+                  spawnBurst(
+                    particlesRef.current,
+                    hitBall.x,
+                    hitBall.y,
+                    hitBall.golden ? '#facc15' : BALL_COLORS[hitBall.level],
+                  )
+                  popupsRef.current.push({
+                    x: hitBall.x,
+                    y: hitBall.y,
+                    text: `+${gained}`,
+                    life: 700,
+                    maxLife: 700,
+                    color: '#38bdf8',
+                  })
+                  ballsRef.current = [
+                    ...ballsRef.current.slice(0, hitIndex),
+                    ...ballsRef.current.slice(hitIndex + 1),
+                    ...children,
+                  ]
+                }
+                companionHarpoonsRef.current = remainingCompanionHarpoons
+              }
             }
           }
 
@@ -3540,91 +3656,6 @@ function GamePlay({
               }
             }
             harpoonsRef.current = remainingHarpoons
-          }
-
-          if (
-            (settings.aiCompanion || time < aiHelperUntilRef.current) &&
-            !demo
-          ) {
-            // Chase the nearest ball inside its own lane, or drift back to
-            // the lane's center when there's nothing there to shoot at.
-            const laneTargetBall = ballsRef.current
-              .filter(
-                (b) => b.x >= COMPANION_LANE_MIN && b.x <= COMPANION_LANE_MAX,
-              )
-              .sort((a, b) => b.y - a.y)[0]
-            const targetX = laneTargetBall
-              ? laneTargetBall.x
-              : (COMPANION_LANE_MIN + COMPANION_LANE_MAX) / 2
-            const dx = targetX - companionXRef.current
-            const step = Math.min(Math.abs(dx), COMPANION_SPEED * dtSec)
-            companionXRef.current = Math.min(
-              COMPANION_LANE_MAX,
-              Math.max(
-                COMPANION_LANE_MIN,
-                companionXRef.current + Math.sign(dx) * step,
-              ),
-            )
-
-            if (
-              companionHarpoonsRef.current.length === 0 &&
-              time >= companionCooldownRef.current &&
-              laneTargetBall &&
-              Math.abs(laneTargetBall.x - companionXRef.current) <=
-                COMPANION_AIM_TOLERANCE
-            ) {
-              companionHarpoonsRef.current = [
-                { x: companionXRef.current, y: PLAYER_Y, baseY: PLAYER_Y },
-              ]
-              companionCooldownRef.current = time + COMPANION_FIRE_COOLDOWN_MS
-            }
-
-            companionHarpoonsRef.current = companionHarpoonsRef.current
-              .map((h) => ({ ...h, y: h.y - HARPOON_SPEED * dtSec }))
-              .filter(
-                (h) =>
-                  h.y > 20 && !harpoonHitsObstacle(h.x, h.y, activePlatforms),
-              )
-
-            if (companionHarpoonsRef.current.length > 0) {
-              const remainingCompanionHarpoons: Harpoon[] = []
-              for (const h of companionHarpoonsRef.current) {
-                const hitIndex = ballsRef.current.findIndex((b) =>
-                  harpoonHitsBall(h.x, h.y, b, h.baseY ?? PLAYER_Y),
-                )
-                if (hitIndex === -1) {
-                  remainingCompanionHarpoons.push(h)
-                  continue
-                }
-                const hitBall = ballsRef.current[hitIndex]
-                const children = splitBall(hitBall, nextId)
-                const gained = Math.round(
-                  SCORE_BY_LEVEL[hitBall.level] * COMPANION_SCORE_MULTIPLIER,
-                )
-                scoreRef.current = addToTotalScore(scoreRef.current, gained)
-                setScore(scoreRef.current)
-                spawnBurst(
-                  particlesRef.current,
-                  hitBall.x,
-                  hitBall.y,
-                  hitBall.golden ? '#facc15' : BALL_COLORS[hitBall.level],
-                )
-                popupsRef.current.push({
-                  x: hitBall.x,
-                  y: hitBall.y,
-                  text: `+${gained}`,
-                  life: 700,
-                  maxLife: 700,
-                  color: '#38bdf8',
-                })
-                ballsRef.current = [
-                  ...ballsRef.current.slice(0, hitIndex),
-                  ...ballsRef.current.slice(hitIndex + 1),
-                  ...children,
-                ]
-              }
-              companionHarpoonsRef.current = remainingCompanionHarpoons
-            }
           }
 
           if (
@@ -4315,7 +4346,28 @@ function GamePlay({
         for (const h of companionHarpoonsRef.current) {
           drawHarpoon(ctx, h, time)
         }
-        drawCompanionDrone(ctx, companionXRef.current, PLAYER_Y, time)
+        // Rendered with the same drawPlayerShip used for the real player —
+        // it IS a copy of the player now — but ghosted (translucent, cool
+        // hue-shifted) so it always reads as the Companion clone rather
+        // than being confused with the real player.
+        ctx.save()
+        ctx.globalAlpha = 0.65
+        ctx.filter = 'hue-rotate(190deg) saturate(1.7) brightness(1.15)'
+        drawPlayerShip(
+          ctx,
+          companionXRef.current,
+          companionYRef.current,
+          getPlayerTheme(
+            stageIndex,
+            STAGE_NAMES[stageIndex % STAGE_NAMES.length],
+          ),
+          false,
+          time,
+          companionFacingRef.current,
+          time < companionMovingUntilRef.current,
+          companionLastFireAtRef.current,
+        )
+        ctx.restore()
       }
 
       for (const b of ballsRef.current) {
