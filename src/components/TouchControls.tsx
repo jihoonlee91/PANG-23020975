@@ -4,6 +4,7 @@ type Props = {
   disabled?: boolean
   size: number
   opacity: number
+  hasLadder?: boolean
   onChange: (source: string, action: InputAction, pressed: boolean) => void
 }
 
@@ -11,6 +12,7 @@ export default function TouchControls({
   disabled,
   size,
   opacity,
+  hasLadder,
   onChange,
 }: Props) {
   const bind = (action: InputAction, label: string) => ({
@@ -56,6 +58,24 @@ export default function TouchControls({
           →
         </button>
       </div>
+      {hasLadder && (
+        <div className="touch-vertical" aria-label="Climb ladder">
+          <button
+            type="button"
+            className="touch-button touch-up"
+            {...bind('up', 'Climb up')}
+          >
+            ↑
+          </button>
+          <button
+            type="button"
+            className="touch-button touch-down"
+            {...bind('down', 'Climb down')}
+          >
+            ↓
+          </button>
+        </div>
+      )}
       <button
         type="button"
         className="touch-button touch-fire"

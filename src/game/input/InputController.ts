@@ -1,10 +1,12 @@
-export type InputAction = 'left' | 'right' | 'fire'
+export type InputAction = 'left' | 'right' | 'up' | 'down' | 'fire'
 
 export type InputSnapshot = Record<InputAction, boolean>
 
 const EMPTY_INPUT: InputSnapshot = {
   left: false,
   right: false,
+  up: false,
+  down: false,
   fire: false,
 }
 
@@ -41,6 +43,8 @@ export class InputController {
     for (const input of this.sources.values()) {
       result.left ||= input.left
       result.right ||= input.right
+      result.up ||= input.up
+      result.down ||= input.down
       result.fire ||= input.fire
     }
     return result

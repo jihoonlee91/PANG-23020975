@@ -72,6 +72,7 @@ import {
   stepPlayerOnTerrain,
   isDestructiblePlatform,
 } from './game/terrain'
+import type { Ladder } from './game/terrain'
 import {
   PORTAL_COOLDOWN_MS,
   findPortalTransition,
@@ -417,6 +418,31 @@ function drawObstacle(
     ctx.lineWidth = 1.5
     ctx.stroke()
   }
+}
+
+function drawLadder(ctx: CanvasRenderingContext2D, ladder: Ladder) {
+  const { x, width, topY } = ladder
+  const railInset = 5
+  ctx.save()
+  ctx.shadowColor = '#facc15'
+  ctx.shadowBlur = 12
+  ctx.strokeStyle = '#facc15'
+  ctx.lineWidth = 4
+  ctx.beginPath()
+  ctx.moveTo(x + railInset, topY)
+  ctx.lineTo(x + railInset, PLAYER_Y)
+  ctx.moveTo(x + width - railInset, topY)
+  ctx.lineTo(x + width - railInset, PLAYER_Y)
+  ctx.stroke()
+  ctx.lineWidth = 3
+  ctx.strokeStyle = '#fde68a'
+  for (let rungY = topY + 10; rungY < PLAYER_Y; rungY += 20) {
+    ctx.beginPath()
+    ctx.moveTo(x + railInset, rungY)
+    ctx.lineTo(x + width - railInset, rungY)
+    ctx.stroke()
+  }
+  ctx.restore()
 }
 
 function drawPortal(
@@ -2339,6 +2365,10 @@ function GamePlay({
         inputRef.current.set('keyboard-left', 'left', true)
       if (key === 'arrowright' || key === 'd')
         inputRef.current.set('keyboard-right', 'right', true)
+      if (key === 'arrowup' || key === 'w')
+        inputRef.current.set('keyboard-up', 'up', true)
+      if (key === 'arrowdown' || key === 's')
+        inputRef.current.set('keyboard-down', 'down', true)
       if (key === ' ') {
         e.preventDefault()
         inputRef.current.set('keyboard-fire', 'fire', true)
@@ -2350,6 +2380,10 @@ function GamePlay({
         inputRef.current.release('keyboard-left')
       if (key === 'arrowright' || key === 'd')
         inputRef.current.release('keyboard-right')
+      if (key === 'arrowup' || key === 'w')
+        inputRef.current.release('keyboard-up')
+      if (key === 'arrowdown' || key === 's')
+        inputRef.current.release('keyboard-down')
       if (key === ' ') inputRef.current.release('keyboard-fire')
     }
     window.addEventListener('keydown', handleKeyDown)
@@ -3957,6 +3991,7 @@ function GamePlay({
         if (destroyedPlatformsRef.current.has(i)) return
         drawObstacle(ctx, platform, isDestructiblePlatform(stageIndex, i))
       })
+      if (terrain.ladder) drawLadder(ctx, terrain.ladder)
       for (const pair of portalPairs) {
         drawPortal(ctx, pair.entry, time)
         drawPortal(ctx, pair.exit, time)
@@ -4323,6 +4358,7 @@ function GamePlay({
               disabled={paused || isStarting}
               size={settings.touchButtonSize}
               opacity={settings.touchButtonOpacity}
+              hasLadder={terrain.ladder != null}
               onChange={handleTouchChange}
             />
           )}

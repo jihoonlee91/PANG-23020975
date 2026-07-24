@@ -9,6 +9,8 @@ describe('InputController', () => {
     expect(input.snapshot()).toEqual({
       left: true,
       right: false,
+      up: false,
+      down: false,
       fire: true,
     })
   })
@@ -23,6 +25,8 @@ describe('InputController', () => {
     expect(input.snapshot()).toEqual({
       left: false,
       right: false,
+      up: false,
+      down: false,
       fire: false,
     })
   })

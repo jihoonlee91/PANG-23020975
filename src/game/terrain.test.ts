@@ -87,6 +87,51 @@ describe('stage terrain', () => {
   })
 })
 
+describe('ladders', () => {
+  it('has no ladder before stage 30', () => {
+    for (let stage = 0; stage < 30; stage += 1) {
+      expect(getStageTerrain(stage).ladder).toBeUndefined()
+    }
+  })
+
+  it('places a ladder on stage 33 (30 + first stage % 4 === 1)', () => {
+    const ladder = getStageTerrain(33).ladder
+    expect(ladder).toBeDefined()
+    expect(ladder!.topY).toBeLessThan(PLAYER_Y)
+    expect(ladder!.width).toBeGreaterThan(0)
+  })
+
+  it('climbs up toward the ladder top while standing in its x-range', () => {
+    const terrain = getStageTerrain(33)
+    const ladder = terrain.ladder!
+    const startX = ladder.x + ladder.width / 2
+    const next = stepPlayerOnTerrain(
+      startX,
+      PLAYER_Y,
+      { left: false, right: false, up: true, down: false },
+      1,
+      300,
+      terrain,
+    )
+    expect(next.y).toBeLessThan(PLAYER_Y)
+    expect(next.y).toBeGreaterThanOrEqual(ladder.topY)
+  })
+
+  it('falls back to the ground once outside the ladder x-range', () => {
+    const terrain = getStageTerrain(33)
+    const ladder = terrain.ladder!
+    const next = stepPlayerOnTerrain(
+      ladder.x - 100,
+      ladder.topY,
+      { left: false, right: false },
+      1,
+      300,
+      terrain,
+    )
+    expect(next.y).toBeGreaterThan(ladder.topY)
+  })
+})
+
 describe('isDestructiblePlatform', () => {
   it('has no destructible platforms before stage 21 (0-indexed 20)', () => {
     expect(isDestructiblePlatform(19, 0)).toBe(false)

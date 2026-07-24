@@ -504,6 +504,20 @@
   background: rgba(220, 38, 38, var(--touch-opacity));
 }
 
+.touch-vertical {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.touch-up {
+  border-radius: 18px 18px 0 0;
+}
+
+.touch-down {
+  border-radius: 0 0 18px 18px;
+}
+
 .touch-hint {
   display: none;
   margin: 0;

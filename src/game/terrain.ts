@@ -7,6 +7,13 @@ import {
 } from './constants'
 import { ICE_WIND_START_STAGE, ICE_WIND_STAGE_COUNT } from './iceWinds'
 
+export type Ladder = {
+  x: number
+  width: number
+  // How high the player can climb — the ground itself is always PLAYER_Y.
+  topY: number
+}
+
 export type StageTerrain = {
   platforms: readonly Obstacle[]
   // The floor itself is slick through Frozen Summit (same range as the
@@ -16,6 +23,12 @@ export type StageTerrain = {
   // push independent of the player's own input, this is the player's own
   // momentum being harder to control.
   icy?: boolean
+  // A vertical zone the player can climb (Up/Down while standing in its
+  // x-range) to fire harpoons from a higher vantage point — a small
+  // positioning puzzle rather than a new attack, echoing classic Pang's
+  // ladders. Stepping outside the ladder's x-range lets the player fall
+  // back to the ground rather than float in place.
+  ladder?: Ladder
 }
 
 const HIDDEN_FINALE_TERRAIN: StageTerrain = {
@@ -188,11 +201,30 @@ function isIcyStage(stageIndex: number): boolean {
   )
 }
 
+// Held off until the "layout families" terrain kicks in (same reasoning as
+// DESTRUCTIBLE_START_STAGE below) and appears roughly one stage in four —
+// frequent enough to matter, rare enough to stay a special moment rather
+// than a permanent fixture of every stage.
+const LADDER_START_STAGE = 30
+
+function getStageLadder(stageIndex: number): Ladder | undefined {
+  if (stageIndex < LADDER_START_STAGE) return undefined
+  if (stageIndex % 4 !== 1) return undefined
+  const laneJitter = (stageIndex * 41) % (CANVAS_WIDTH - 320)
+  return {
+    x: 160 + laneJitter,
+    width: 36,
+    topY: 200 + ((stageIndex * 23) % 80),
+  }
+}
+
 export const STAGE_TERRAINS: readonly StageTerrain[] = STAGE_OBSTACLES.map(
   (primary, stageIndex) => {
     const icy = isIcyStage(stageIndex) ? { icy: true } : {}
+    const ladder = getStageLadder(stageIndex)
+    const ladderProp = ladder ? { ladder } : {}
     const earlyTerrain = EARLY_STAGE_TERRAINS[stageIndex]
-    if (earlyTerrain) return { ...earlyTerrain, ...icy }
+    if (earlyTerrain) return { ...earlyTerrain, ...icy, ...ladderProp }
 
     const targetCount = getTargetPlatformCount(stageIndex)
     const candidates = [
@@ -200,7 +232,11 @@ export const STAGE_TERRAINS: readonly StageTerrain[] = STAGE_OBSTACLES.map(
       ...(EXTRA_PLATFORMS[stageIndex] ?? []),
       ...getSupplementalPlatforms(stageIndex),
     ]
-    return { platforms: candidates.slice(0, targetCount), ...icy }
+    return {
+      platforms: candidates.slice(0, targetCount),
+      ...icy,
+      ...ladderProp,
+    }
   },
 )
 
@@ -233,6 +269,8 @@ export function isDestructiblePlatform(
 type PlayerTerrainInput = {
   left: boolean
   right: boolean
+  up?: boolean
+  down?: boolean
 }
 
 // Reaches full speed in 1/3s on ice (vs. instant everywhere else) —
@@ -249,9 +287,15 @@ function moveToward(value: number, target: number, maxDelta: number): number {
   return value
 }
 
+// Climbing is deliberate (slower than walking); stepping off the ladder's
+// x-range snaps back to the ground quickly so the player isn't left
+// hanging in mid-air with no support underneath.
+const LADDER_CLIMB_SPEED = 220
+const LADDER_FALL_SPEED = 520
+
 export function stepPlayerOnTerrain(
   x: number,
-  _y: number,
+  y: number,
   input: PlayerTerrainInput,
   dtSec: number,
   horizontalSpeed: number,
@@ -262,9 +306,25 @@ export function stepPlayerOnTerrain(
   const clampX = (value: number) =>
     Math.min(CANVAS_WIDTH - PLAYER_WIDTH / 2, Math.max(PLAYER_WIDTH / 2, value))
 
+  const ladder = terrain.ladder
+  const withinLadderX =
+    ladder != null && x >= ladder.x && x <= ladder.x + ladder.width
+  const nextY = withinLadderX
+    ? Math.min(
+        PLAYER_Y,
+        Math.max(
+          ladder.topY,
+          y +
+            (Number(input.down) - Number(input.up)) *
+              LADDER_CLIMB_SPEED *
+              dtSec,
+        ),
+      )
+    : moveToward(y, PLAYER_Y, LADDER_FALL_SPEED * dtSec)
+
   if (!terrain.icy) {
     const nextX = clampX(x + horizontalDirection * horizontalSpeed * dtSec)
-    return { x: nextX, y: PLAYER_Y, vx: horizontalDirection * horizontalSpeed }
+    return { x: nextX, y: nextY, vx: horizontalDirection * horizontalSpeed }
   }
 
   const targetVx = horizontalDirection * horizontalSpeed
@@ -277,5 +337,5 @@ export function stepPlayerOnTerrain(
   // speed against the boundary, so the player isn't stuck re-accelerating
   // through the wall's resistance every subsequent frame.
   const hitWall = nextX !== rawNextX
-  return { x: nextX, y: PLAYER_Y, vx: hitWall ? 0 : nextVx }
+  return { x: nextX, y: nextY, vx: hitWall ? 0 : nextVx }
 }
