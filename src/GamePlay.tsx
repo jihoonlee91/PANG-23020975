@@ -228,7 +228,6 @@ const ITEM_LABELS: Record<ItemType, string> = {
   lockOn: 'K',
   overdrive: 'O',
   pierce: 'R',
-  starBalloon: '*',
   diagonalWire: 'X',
   spikeArmor: 'Y',
   aiHelper: 'H',
@@ -338,7 +337,6 @@ const ITEM_ANNOUNCEMENTS: Record<ItemType, string> = {
   lockOn: 'Lock-On!',
   overdrive: 'Overdrive!',
   pierce: 'Piercer!',
-  starBalloon: 'Star Balloon!',
   diagonalWire: 'Diagonal Wire!',
   spikeArmor: 'Spike Armor!',
   aiHelper: 'AI Helper!',
@@ -985,32 +983,71 @@ function drawHarpoon(
   }
 
   if (harpoon.kind === 'diagonal') {
-    // Rendered as a short dart (like Vulcan's bolt) rather than a rope
-    // trailing back to the player — it travels fast enough, and off-axis
-    // enough, that a persistent trail would need to track its launch x
-    // separately from its current x, which nothing else stores.
+    // A real harpoon on a wire: a taut tether trails from the launch point
+    // at the player (baseX/baseY) out to the current tip, and the head
+    // points along the direction of travel. baseX is stored at fire time
+    // because a diagonal harpoon drifts sideways, so its origin isn't its
+    // current x the way every straight-up harpoon's is.
+    const baseX = harpoon.baseX ?? harpoon.x
+    const baseY = harpoon.baseY ?? PLAYER_Y
     const angle = Math.atan2(-HARPOON_SPEED, harpoon.vx ?? 0)
+
+    ctx.save()
+    ctx.lineCap = 'round'
+    // Dark tether silhouette for readability over any background, then a
+    // bright animated core with moving tracer dashes to sell speed.
+    ctx.shadowColor = '#020617'
+    ctx.shadowBlur = 5
+    ctx.strokeStyle = '#3f2d20'
+    ctx.lineWidth = 5
+    ctx.beginPath()
+    ctx.moveTo(baseX, baseY)
+    ctx.lineTo(harpoon.x, harpoon.y)
+    ctx.stroke()
+
+    ctx.shadowColor = '#38bdf8'
+    ctx.shadowBlur = 7
+    ctx.strokeStyle = '#bae6fd'
+    ctx.lineWidth = 2.2
+    ctx.beginPath()
+    ctx.moveTo(baseX, baseY)
+    ctx.lineTo(harpoon.x, harpoon.y)
+    ctx.stroke()
+
+    ctx.shadowBlur = 4
+    ctx.setLineDash([6, 8])
+    ctx.lineDashOffset = -(time / 28)
+    ctx.strokeStyle = '#38bdf8'
+    ctx.lineWidth = 1.6
+    ctx.beginPath()
+    ctx.moveTo(baseX, baseY)
+    ctx.lineTo(harpoon.x, harpoon.y)
+    ctx.stroke()
+    ctx.setLineDash([])
+    ctx.restore()
+
+    // Barbed metal head at the tip, rotated to point along the flight path.
     ctx.save()
     ctx.translate(harpoon.x, harpoon.y)
     ctx.rotate(angle + Math.PI / 2)
     ctx.shadowColor = '#38bdf8'
     ctx.shadowBlur = 10
-    ctx.fillStyle = '#0c4a6e'
+    const metal = ctx.createLinearGradient(-7, 0, 7, 0)
+    metal.addColorStop(0, '#475569')
+    metal.addColorStop(0.48, '#f8fafc')
+    metal.addColorStop(1, '#64748b')
+    ctx.fillStyle = metal
+    ctx.strokeStyle = '#1e293b'
+    ctx.lineWidth = 1.6
     ctx.beginPath()
-    ctx.moveTo(0, -14)
-    ctx.lineTo(-4, 6)
-    ctx.lineTo(4, 6)
+    ctx.moveTo(0, -15)
+    ctx.lineTo(-6, 4)
+    ctx.lineTo(-2.5, 1)
+    ctx.lineTo(0, 6)
+    ctx.lineTo(2.5, 1)
+    ctx.lineTo(6, 4)
     ctx.closePath()
     ctx.fill()
-    ctx.fillStyle = '#7dd3fc'
-    ctx.beginPath()
-    ctx.moveTo(0, -12)
-    ctx.lineTo(-6, -2)
-    ctx.lineTo(6, -2)
-    ctx.closePath()
-    ctx.fill()
-    ctx.strokeStyle = '#f0f9ff'
-    ctx.lineWidth = 1.2
     ctx.stroke()
     ctx.restore()
     return
@@ -3375,6 +3412,7 @@ function GamePlay({
                 ? [-1, 1].map((dir) => ({
                     x: playerXRef.current,
                     y: playerYRef.current,
+                    baseX: playerXRef.current,
                     baseY: playerYRef.current,
                     kind: 'diagonal' as const,
                     vx: dir * DIAGONAL_HARPOON_VX,
@@ -3986,43 +4024,6 @@ function GamePlay({
                 )
                 setScore(scoreRef.current)
                 ballsRef.current = shockwaveChildren
-                playHitSound(2)
-                break
-              }
-              case 'starBalloon': {
-                // Classic Pang's Star Balloon: removes every ball outright
-                // (no split-down, unlike Shockwave) — the most powerful
-                // pickup in the pool, effectively an instant clear. Reuses
-                // the normal "0 balls left" clear detection just below
-                // this switch rather than calling onClear directly.
-                let starGained = 0
-                for (const b of ballsRef.current) {
-                  spawnBurst(
-                    particlesRef.current,
-                    b.x,
-                    b.y,
-                    b.golden ? '#facc15' : '#fde047',
-                  )
-                  const gained = Math.round(
-                    SCORE_BY_LEVEL[b.level] *
-                      (1 + comboRef.current * 0.1) *
-                      (isNovaSurgeActive ? NOVA_SURGE_MULTIPLIER : 1) *
-                      (isOverdriveActive ? OVERDRIVE_SCORE_MULTIPLIER : 1) *
-                      (b.golden ? GOLDEN_BALL_SCORE_MULTIPLIER : 1),
-                  )
-                  starGained += gained
-                  popupsRef.current.push({
-                    x: b.x,
-                    y: b.y,
-                    text: b.golden ? `GOLDEN +${gained}` : `+${gained}`,
-                    life: 700,
-                    maxLife: 700,
-                    color: '#fde047',
-                  })
-                }
-                scoreRef.current = addToTotalScore(scoreRef.current, starGained)
-                setScore(scoreRef.current)
-                ballsRef.current = []
                 playHitSound(2)
                 break
               }

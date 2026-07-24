@@ -9,6 +9,14 @@ export type ReleaseNote = {
 // recent releases are kept; older entries can be dropped.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.31.1',
+    date: '2026-07-25',
+    notes: [
+      'The Diagonal Wire now looks like a real harpoon — a tethered line trailing back to you at an angle — instead of a tetherless dart.',
+      'Removed the Star Balloon item: clearing the whole screen in one pickup was too strong, and Shockwave already fills the screen-wide role.',
+    ],
+  },
+  {
     version: '1.31.0',
     date: '2026-07-25',
     notes: [

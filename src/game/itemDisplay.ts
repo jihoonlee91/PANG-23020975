@@ -26,7 +26,6 @@ export const ITEM_COLORS: Record<ItemType, string> = {
   lockOn: '#a855f7',
   overdrive: '#ef4444',
   pierce: '#eab308',
-  starBalloon: '#fde047',
   diagonalWire: '#38bdf8',
   spikeArmor: '#f472b6',
   aiHelper: '#38bdf8',
@@ -58,7 +57,6 @@ export const ITEM_TITLES: Record<ItemType, string> = {
   lockOn: 'Lock-On',
   overdrive: 'Overdrive',
   pierce: 'Piercer',
-  starBalloon: 'Star Balloon',
   diagonalWire: 'Diagonal Wire',
   spikeArmor: 'Spike Armor',
   aiHelper: 'AI Helper',
@@ -91,7 +89,6 @@ export const ITEM_DESCRIPTIONS: Record<ItemType, string> = {
   lockOn: '8초 동안 공의 양자 요동(순간이동)이 발생하지 않습니다.',
   overdrive: '8초 동안 모든 hazard 피해를 막고 점수를 1.5배로 획득합니다.',
   pierce: '8초 동안 작살이 장애물을 뚫고 계속 날아갑니다.',
-  starBalloon: '화면의 모든 공을 즉시 제거하고 점수를 얻습니다.',
   diagonalWire: '10초 동안 작살이 좌우 45도 대각선으로 2발 발사됩니다.',
   spikeArmor: '8초 동안 공에 몸으로 닿으면 피해 대신 공을 터뜨립니다.',
   aiHelper: '12초 동안 AI 도우미 드론이 등장해 대신 공을 맞혀줍니다.',
@@ -534,28 +531,6 @@ export function drawFallingItemIcon(
       ctx.closePath()
       ctx.fill()
       break
-    case 'starBalloon': {
-      ctx.beginPath()
-      ctx.arc(0, 0, 11, 0, Math.PI * 2)
-      ctx.fill()
-      ctx.stroke()
-      ctx.fillStyle = '#fff9e0'
-      ctx.beginPath()
-      const spikes = 5
-      const outerR = 8
-      const innerR = 3.2
-      for (let i = 0; i < spikes * 2; i += 1) {
-        const r = i % 2 === 0 ? outerR : innerR
-        const angle = (Math.PI / spikes) * i - Math.PI / 2
-        const px = Math.cos(angle) * r
-        const py = Math.sin(angle) * r
-        if (i === 0) ctx.moveTo(px, py)
-        else ctx.lineTo(px, py)
-      }
-      ctx.closePath()
-      ctx.fill()
-      break
-    }
     case 'diagonalWire':
       for (const dir of [-1, 1]) {
         ctx.save()
