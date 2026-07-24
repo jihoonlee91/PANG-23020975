@@ -9,6 +9,13 @@ export type ReleaseNote = {
 // recent releases are kept; older entries can be dropped.
 export const RELEASE_NOTES: ReleaseNote[] = [
   {
+    version: '1.30.2',
+    date: '2026-07-25',
+    notes: [
+      "Fixed Chaos Rift's gravity wells resetting to their weakest pull every 10 stages instead of building up across the full finale — they now scale continuously from stage 151 to 200.",
+    ],
+  },
+  {
     version: '1.30.1',
     date: '2026-07-24',
     notes: [

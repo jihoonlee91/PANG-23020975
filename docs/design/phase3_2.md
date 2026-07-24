@@ -70,3 +70,41 @@ established early/mid-game pacing:
   now floored higher (2800ms) specifically during the icy floor's 10
   stages (`CRITTER_ICY_FLOOR_MIN_PERIOD_MS`), keeping the crawl readable
   while steering is already compromised.
+
+### Full-curve smoothness review (stage 1-200)
+
+A later review checked the whole 1-200 curve end to end, not just the
+mechanic-stacking intersections above. One concrete bug found and fixed,
+plus judgment-call items flagged but left alone:
+
+- **Chaos Rift well strength sawtooth (fixed)**: `getChaosRiftWells`
+  (`chaosRift.ts`) scaled its pull `strength` off `subBlockDepth`, the
+  0-9 index that resets every 10 stages (used correctly for cycling
+  `WELL_POSITIONS` and for the Prism Collapse spin's onset). Since
+  `getChaosRiftCurrent`/`getChaosRiftFireZones` in the same file both
+  scale off the full 0-49 Chaos Rift depth instead, this made well
+  strength the odd one out: it reset to its 4.4M floor at the start of
+  every sub-block (161, 171, 181, 191) instead of compounding across the
+  finale, and never exceeded Stellar Forge's own 10.3M cap
+  (`gravityWells.ts`, stages 51-60) anywhere in Chaos Rift despite the
+  block's own comment claiming to exceed prior well hazards' caps. Now
+  uses the full Chaos Rift depth for `strength`/`spin`, matching the
+  current/fire-zone pattern — it ranges 4.4M at stage 151 up to 16.85M
+  at stage 200, well past every earlier well-based hazard's ceiling.
+- **Item drop rate floors by stage 30 (flagged, not changed)**:
+  `getStageItemDropChance` (`constants.ts`) hits its 8% floor at stage 30
+  and stays flat for the remaining 170 stages, while 12 more escalating
+  hazard blocks (Current through Chaos Rift) are introduced after that
+  point. Whether power-up support should keep climbing (even slightly)
+  alongside hazard density in the back half is a tuning judgment call,
+  not a bug — left for discussion.
+- **Ball count/speed/platform-count plateaus (flagged, not changed)**:
+  ball count caps at 8 by stage 16 (`createStage`, `engine.ts`), speed
+  multiplier caps at stage 80, and platform count caps at 4 by stage 16
+  (`getTargetPlatformCount`, `terrain.ts`) — all per the original 3-1/3-2
+  design intent (later stages differentiate through hazard identity, not
+  raw count/speed). Confirmed intentional, not a drift bug, but noting
+  it here since it means roughly stages 80-200 (120 stages, well over
+  half the game) carry difficulty entirely through hazard-block identity
+  and terrain layout rather than any numeric curve — worth knowing if a
+  future pass wants a gentler numeric trickle on top.

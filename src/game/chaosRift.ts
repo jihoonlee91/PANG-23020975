@@ -121,12 +121,16 @@ export function getChaosRiftWells(stageIndex: number): GravityWell[] | null {
     return null
   }
   const block = subBlockIndex(stageIndex)
-  const depth = subBlockDepth(stageIndex)
-  const [x, y] = WELL_POSITIONS[depth % WELL_POSITIONS.length]
-  // Prism Collapse (block 3) spins, matching its "reality bending" theme —
-  // every other well-bearing sub-chapter pulls straight in. Strength
-  // already exceeds Stellar Forge's/Vortex Frontier's own caps from the
-  // first stage in the block.
+  const localDepth = subBlockDepth(stageIndex)
+  // Position/spin-onset cycle per sub-block (localDepth, resets every 10
+  // stages), but strength scales on the full 0-49 Chaos Rift depth — using
+  // localDepth for strength too used to reset the pull back to its 4.4M
+  // floor at the start of every sub-block (161, 171, 181, 191), sawtoothing
+  // four times across the finale instead of compounding, and never
+  // exceeding Stellar Forge's own 10.3M cap (`gravityWells.ts`) anywhere in
+  // the block. See the "Chaos Rift well strength" note in phase3_2.md.
+  const depth = stageIndex - CHAOS_RIFT_START_STAGE
+  const [x, y] = WELL_POSITIONS[localDepth % WELL_POSITIONS.length]
   return [
     {
       x,

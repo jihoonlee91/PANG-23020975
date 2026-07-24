@@ -81,4 +81,20 @@ describe('getChaosRiftWells', () => {
     expect(getChaosRiftWells(CHAOS_RIFT_START_STAGE + 40)).not.toBeNull()
     expect(getChaosRiftFireZones(CHAOS_RIFT_START_STAGE + 40)).not.toBeNull()
   })
+
+  it('compounds strength across the full 50-stage depth instead of resetting every sub-block', () => {
+    // Well-bearing sub-blocks are 1 (Storm Citadel, 10-19), 3 (Prism
+    // Collapse, 30-39), and 4 (Final Singularity, 40-49) — strength must
+    // keep climbing across each boundary, not sawtooth back to the floor.
+    const storm = getChaosRiftWells(CHAOS_RIFT_START_STAGE + 10)!
+    const prism = getChaosRiftWells(CHAOS_RIFT_START_STAGE + 30)!
+    const singularity = getChaosRiftWells(CHAOS_RIFT_START_STAGE + 49)!
+    expect(prism[0].strength).toBeGreaterThan(storm[0].strength)
+    expect(singularity[0].strength).toBeGreaterThan(prism[0].strength)
+  })
+
+  it("exceeds Stellar Forge's own gravity well cap (10.3M) by the end of Chaos Rift", () => {
+    const wells = getChaosRiftWells(CHAOS_RIFT_START_STAGE + 49)
+    expect(wells![0].strength).toBeGreaterThan(10_300_000)
+  })
 })
