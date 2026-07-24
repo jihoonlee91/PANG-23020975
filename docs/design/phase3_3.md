@@ -17,3 +17,11 @@
 
 - Stages 11-20 use dedicated WebP illustrations, while stages 21-150 combine their existing distinct Canvas compositions with optimized chapter art plates. See `phase6_4.md` for the shared loading, fallback, variation, and performance design.
 - Extra floating platform layouts, stages ~5-20: `EXTRA_PLATFORMS` (`terrain.ts`) is a hand-placed array indexed directly by stage. Stages 21-100: `LAYOUT_FAMILIES`, eight distinct hand-shaped patterns (staggered stairs, twin towers, outer rim, zigzag, layered shelves, diamond, scattered cluster, cross), cycled by stage index with per-stage jitter within each family — replaces a single repeating procedural formula that had been reused unchanged across all 80 stages past the hand-placed range.
+
+## Unified background assets
+
+- Every stage from 1 through 201 has one dedicated `960x540` WebP background matching the gameplay Canvas coordinate space.
+- All stage backgrounds live together under `src/assets/backgrounds/stages/`.
+- Asset filenames use a zero-padded stage number (`stage001.webp` through `stage201.webp`) so completeness and ordering can be checked mechanically.
+- Stages 1-10 preserve the existing Canvas 2D landmark compositions as exported WebP images; stages 11-201 keep their existing illustrated compositions.
+- The gameplay readability grade is baked consistently into every exported image, so the runtime must not apply the grade twice.
