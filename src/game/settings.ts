@@ -8,6 +8,7 @@ export type GameSettings = {
   screenShake: boolean
   vibration: boolean
   showFps: boolean
+  aiCompanion: boolean
 }
 
 export const DEFAULT_SETTINGS: GameSettings = {
@@ -20,6 +21,7 @@ export const DEFAULT_SETTINGS: GameSettings = {
   screenShake: true,
   vibration: true,
   showFps: false,
+  aiCompanion: false,
 }
 
 const KEY = 'pang.settings.v1'

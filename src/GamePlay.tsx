@@ -1523,6 +1523,39 @@ const PLAYER_PALETTES: Record<PlayerTheme, PlayerPalette> = {
   },
 }
 
+function drawCompanionDrone(
+  ctx: CanvasRenderingContext2D,
+  x: number,
+  y: number,
+  time: number,
+) {
+  const bob = Math.sin(time / 260) * 4
+  ctx.save()
+  ctx.translate(x, y - 30 + bob)
+  ctx.shadowColor = '#38bdf8'
+  ctx.shadowBlur = 14
+  ctx.fillStyle = '#0c4a6e'
+  ctx.beginPath()
+  ctx.ellipse(0, 0, 16, 9, 0, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.strokeStyle = '#7dd3fc'
+  ctx.lineWidth = 2
+  ctx.stroke()
+  ctx.fillStyle = '#bae6fd'
+  ctx.beginPath()
+  ctx.arc(0, -3, 5, 0, Math.PI * 2)
+  ctx.fill()
+  ctx.strokeStyle = '#38bdf8'
+  ctx.lineWidth = 1.5
+  for (const side of [-1, 1]) {
+    ctx.beginPath()
+    ctx.moveTo(side * 10, 4)
+    ctx.lineTo(side * 16, 12 + Math.sin(time / 150 + side) * 2)
+    ctx.stroke()
+  }
+  ctx.restore()
+}
+
 function drawPlayerShip(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -2015,6 +2048,18 @@ const AI_FLOOD_BALL_COUNT = 10
 // while a fired wire climbs. Balls farther out than this can't be hit and
 // skip the full simulation entirely.
 const AI_PREFILTER_DRIFT_SLACK = 160
+// The AI Companion (an opt-in assist setting) patrols a fixed lane on the
+// right side of the arena rather than the whole width — it should help
+// without crowding out the player's own space or looking like a second
+// full player. It fires its own simple, independent harpoon: no weapon
+// items, no combo credit, reduced score — clearly a helper, not a way to
+// double the player's output.
+const COMPANION_LANE_MIN = CANVAS_WIDTH * 0.62
+const COMPANION_LANE_MAX = CANVAS_WIDTH - PLAYER_WIDTH / 2
+const COMPANION_SPEED = 220
+const COMPANION_FIRE_COOLDOWN_MS = 500
+const COMPANION_AIM_TOLERANCE = 16
+const COMPANION_SCORE_MULTIPLIER = 0.5
 const HIT_EFFECT_MS = 350
 // A first-ever stage clear crossfades the background from the Canvas
 // placeholder to the real illustrated art right on the gameplay canvas —
@@ -2166,6 +2211,9 @@ function GamePlay({
   const playerMovingUntilRef = useRef(0)
   const ballsRef = useRef<Ball[]>(createStage(stageIndex))
   const harpoonsRef = useRef<Harpoon[]>([])
+  const companionXRef = useRef((COMPANION_LANE_MIN + COMPANION_LANE_MAX) / 2)
+  const companionHarpoonsRef = useRef<Harpoon[]>([])
+  const companionCooldownRef = useRef(0)
   const itemsRef = useRef<Item[]>([])
   const hpRef = useRef(MAX_HP)
   const invulnUntilRef = useRef(0)
@@ -2261,6 +2309,9 @@ function GamePlay({
         Math.random() < GOLDEN_BALL_CHANCE ? { ...ball, golden: true } : ball,
       )
       harpoonsRef.current = []
+      companionXRef.current = (COMPANION_LANE_MIN + COMPANION_LANE_MAX) / 2
+      companionHarpoonsRef.current = []
+      companionCooldownRef.current = 0
       itemsRef.current = []
       hpRef.current = MAX_HP
       invulnUntilRef.current = performance.now() + STAGE_START_INVULN_MS
@@ -3429,6 +3480,88 @@ function GamePlay({
             harpoonsRef.current = remainingHarpoons
           }
 
+          if (settings.aiCompanion && !demo) {
+            // Chase the nearest ball inside its own lane, or drift back to
+            // the lane's center when there's nothing there to shoot at.
+            const laneTargetBall = ballsRef.current
+              .filter(
+                (b) => b.x >= COMPANION_LANE_MIN && b.x <= COMPANION_LANE_MAX,
+              )
+              .sort((a, b) => b.y - a.y)[0]
+            const targetX = laneTargetBall
+              ? laneTargetBall.x
+              : (COMPANION_LANE_MIN + COMPANION_LANE_MAX) / 2
+            const dx = targetX - companionXRef.current
+            const step = Math.min(Math.abs(dx), COMPANION_SPEED * dtSec)
+            companionXRef.current = Math.min(
+              COMPANION_LANE_MAX,
+              Math.max(
+                COMPANION_LANE_MIN,
+                companionXRef.current + Math.sign(dx) * step,
+              ),
+            )
+
+            if (
+              companionHarpoonsRef.current.length === 0 &&
+              time >= companionCooldownRef.current &&
+              laneTargetBall &&
+              Math.abs(laneTargetBall.x - companionXRef.current) <=
+                COMPANION_AIM_TOLERANCE
+            ) {
+              companionHarpoonsRef.current = [
+                { x: companionXRef.current, y: PLAYER_Y, baseY: PLAYER_Y },
+              ]
+              companionCooldownRef.current = time + COMPANION_FIRE_COOLDOWN_MS
+            }
+
+            companionHarpoonsRef.current = companionHarpoonsRef.current
+              .map((h) => ({ ...h, y: h.y - HARPOON_SPEED * dtSec }))
+              .filter(
+                (h) =>
+                  h.y > 20 && !harpoonHitsObstacle(h.x, h.y, activePlatforms),
+              )
+
+            if (companionHarpoonsRef.current.length > 0) {
+              const remainingCompanionHarpoons: Harpoon[] = []
+              for (const h of companionHarpoonsRef.current) {
+                const hitIndex = ballsRef.current.findIndex((b) =>
+                  harpoonHitsBall(h.x, h.y, b, h.baseY ?? PLAYER_Y),
+                )
+                if (hitIndex === -1) {
+                  remainingCompanionHarpoons.push(h)
+                  continue
+                }
+                const hitBall = ballsRef.current[hitIndex]
+                const children = splitBall(hitBall, nextId)
+                const gained = Math.round(
+                  SCORE_BY_LEVEL[hitBall.level] * COMPANION_SCORE_MULTIPLIER,
+                )
+                scoreRef.current = addToTotalScore(scoreRef.current, gained)
+                setScore(scoreRef.current)
+                spawnBurst(
+                  particlesRef.current,
+                  hitBall.x,
+                  hitBall.y,
+                  hitBall.golden ? '#facc15' : BALL_COLORS[hitBall.level],
+                )
+                popupsRef.current.push({
+                  x: hitBall.x,
+                  y: hitBall.y,
+                  text: `+${gained}`,
+                  life: 700,
+                  maxLife: 700,
+                  color: '#38bdf8',
+                })
+                ballsRef.current = [
+                  ...ballsRef.current.slice(0, hitIndex),
+                  ...ballsRef.current.slice(hitIndex + 1),
+                  ...children,
+                ]
+              }
+              companionHarpoonsRef.current = remainingCompanionHarpoons
+            }
+          }
+
           if (
             !isClockActive &&
             !isInvincibleActive &&
@@ -4097,6 +4230,13 @@ function GamePlay({
         drawHarpoon(ctx, h, time)
       }
 
+      if (settings.aiCompanion && !demo) {
+        for (const h of companionHarpoonsRef.current) {
+          drawHarpoon(ctx, h, time)
+        }
+        drawCompanionDrone(ctx, companionXRef.current, PLAYER_Y, time)
+      }
+
       for (const b of ballsRef.current) {
         drawBall(ctx, b, time)
       }
@@ -4227,6 +4367,7 @@ function GamePlay({
     isStarting,
     settings.showFps,
     settings.vibration,
+    settings.aiCompanion,
     settings.screenShake,
   ])
 
@@ -4262,6 +4403,9 @@ function GamePlay({
         )}
         {fireZones && <span className="hud-hazard">Fire Zones</span>}
         {stageCritters && <span className="hud-hazard">Roaming Critter</span>}
+        {settings.aiCompanion && !demo && (
+          <span className="hud-hazard">AI Companion</span>
+        )}
         {(stageChaosCurrent || stageChaosFireZones || stageChaosWells) && (
           <span className="hud-hazard">Chaos Rift</span>
         )}

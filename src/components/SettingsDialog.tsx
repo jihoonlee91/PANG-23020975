@@ -90,6 +90,7 @@ export default function SettingsDialog({
           ['reducedMotion', 'Reduced motion'],
           ['vibration', 'Vibration'],
           ['showFps', 'Show FPS'],
+          ['aiCompanion', 'AI Companion (assist mode)'],
         ] as const
       ).map(([key, label]) => (
         <label className="setting-check" key={key}>
