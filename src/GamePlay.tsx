@@ -131,6 +131,7 @@ import {
   explodeToSmallest,
   predictBallThreats,
   predictHarpoonHit,
+  findBestHarpoonLane,
   itemCatchSeconds,
   countRemainingPops,
   chooseSafeX,
@@ -2470,9 +2471,9 @@ function GamePlay({
             // player's row between bounces never has a "low point" nearby,
             // yet absolutely can hit on the way through.
             const playerBandTopY = playerYRef.current - PLAYER_HEIGHT / 2
-            const predictions = ballsRef.current.map((b) => ({
-              ball: b,
-              ...predictBallThreats(
+            const aiHarpoonSpeed = isVulcanActive ? VULCAN_SPEED : HARPOON_SPEED
+            const predictions = ballsRef.current.map((b) => {
+              const threat = predictBallThreats(
                 b,
                 playerBandTopY,
                 1.5,
@@ -2482,8 +2483,26 @@ function GamePlay({
                 activeGravityWell,
                 ballTimeScale,
                 activeGravityScale,
-              ),
-            }))
+              )
+              return {
+                ball: b,
+                ...threat,
+                shotLane: findBestHarpoonLane(b, threat.x, playerXRef.current, {
+                  bounds: {
+                    min: PLAYER_WIDTH / 2,
+                    max: CANVAS_WIDTH - PLAYER_WIDTH / 2,
+                  },
+                  playerSpeed,
+                  baseY: playerYRef.current,
+                  harpoonSpeed: aiHarpoonSpeed,
+                  obstacles: terrain.platforms,
+                  windAx,
+                  well: activeGravityWell,
+                  ballTimeScale,
+                  gravityScale: activeGravityScale,
+                }),
+              }
+            })
             // Pick the shooting target by real time-to-kill — bounded by
             // both the ball's arrival at its low point and the AI's own
             // travel time to get under it, so a ball landing soon but
@@ -2491,17 +2510,29 @@ function GamePlay({
             // target is kept unless a challenger is clearly better
             // (AI_RETARGET_MARGIN_SEC), killing frame-to-frame retarget
             // thrash between two similarly-placed balls.
+            const shootablePredictions = predictions.filter(
+              (p) => p.shotLane !== null,
+            )
+            const targetCandidates =
+              shootablePredictions.length > 0
+                ? shootablePredictions
+                : predictions
             const shotCost = (p: (typeof predictions)[number]) =>
-              Math.max(p.time, Math.abs(p.x - playerXRef.current) / playerSpeed)
-            let targetPrediction = predictions.reduce<
+              p.shotLane?.cost ??
+              Math.max(
+                p.time,
+                Math.abs(p.x - playerXRef.current) / playerSpeed,
+              ) + 2
+            let targetPrediction = targetCandidates.reduce<
               (typeof predictions)[number] | null
             >(
               (best, p) => (!best || shotCost(p) < shotCost(best) ? p : best),
               null,
             )
             const stickyPrediction =
-              predictions.find((p) => p.ball.id === aiTargetIdRef.current) ??
-              null
+              targetCandidates.find(
+                (p) => p.ball.id === aiTargetIdRef.current,
+              ) ?? null
             if (
               targetPrediction &&
               stickyPrediction &&
@@ -2530,6 +2561,7 @@ function GamePlay({
             )
             const explosiveSafe =
               leafBallCount <= AI_EXPLOSIVE_MAX_LEAVES ||
+              isClockActive ||
               isInvincibleActive ||
               isOverdriveActive ||
               barrierCountRef.current > 0
@@ -2561,12 +2593,17 @@ function GamePlay({
             // to avoid is zero — parking instead of hunting down each
             // frozen ball would waste the entire window.
             const flooded =
-              !isClockActive && ballsRef.current.length >= AI_FLOOD_BALL_COUNT
+              !isClockActive &&
+              !isInvincibleActive &&
+              !isOverdriveActive &&
+              ballsRef.current.length >= AI_FLOOD_BALL_COUNT
             const desiredX = flooded
               ? playerXRef.current
               : itemTarget !== null
                 ? itemTarget.x
-                : (targetPrediction?.x ?? playerXRef.current)
+                : (targetPrediction?.shotLane?.x ??
+                  targetPrediction?.x ??
+                  playerXRef.current)
 
             // The ball we're about to shoot isn't a hazard to route around —
             // it's the plan. Excluding it (while a harpoon slot is actually
@@ -2658,7 +2695,7 @@ function GamePlay({
             // for the goal instead of routing around ghosts.
             const moveTargetX =
               itemTarget !== null || target !== null
-                ? isInvincibleActive
+                ? isClockActive || isInvincibleActive || isOverdriveActive
                   ? desiredX
                   : chooseSafeX(
                       desiredX,
@@ -2715,10 +2752,7 @@ function GamePlay({
                   ),
                 )
               } else {
-                const harpoonSpeed = isVulcanActive
-                  ? VULCAN_SPEED
-                  : HARPOON_SPEED
-                const climbSec = playerYRef.current / harpoonSpeed
+                const climbSec = playerYRef.current / aiHarpoonSpeed
                 fire = ballsRef.current.some((b) => {
                   const reach =
                     LEVEL_RADIUS[b.level] +
@@ -2727,7 +2761,7 @@ function GamePlay({
                   return (
                     predictHarpoonHit(b, playerXRef.current, {
                       baseY: playerYRef.current,
-                      harpoonSpeed,
+                      harpoonSpeed: aiHarpoonSpeed,
                       obstacles: terrain.platforms,
                       windAx,
                       well: activeGravityWell,

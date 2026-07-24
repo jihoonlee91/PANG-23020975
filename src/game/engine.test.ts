@@ -26,6 +26,7 @@ import {
   predictLandingSpot,
   predictBallThreats,
   predictHarpoonHit,
+  findBestHarpoonLane,
   chooseSafeX,
   harpoonHitsObstacle,
   getPowerHarpoonStopY,
@@ -558,6 +559,46 @@ describe('predictHarpoonHit', () => {
     const ball: Ball = { id: 1, x: 300, y: 150, vx: 250, vy: 0, level: 1 }
     // Frozen: the big vx never moves it off the wire's column.
     expect(predictHarpoonHit(ball, 300, { ballTimeScale: 0 })).not.toBeNull()
+  })
+})
+
+describe('findBestHarpoonLane', () => {
+  it('rejects a frozen ball fully screened by a platform', () => {
+    const ball: Ball = { id: 1, x: 480, y: 100, vx: 0, vy: 0, level: 1 }
+    expect(
+      findBestHarpoonLane(ball, 480, 480, {
+        obstacles: [{ x: 400, y: 300, width: 160, height: 20 }],
+        ballTimeScale: 0,
+      }),
+    ).toBeNull()
+  })
+
+  it('finds a different, unobstructed ball while one is screened', () => {
+    const obstacle = { x: 400, y: 300, width: 160, height: 20 }
+    const blocked: Ball = { id: 1, x: 480, y: 100, vx: 0, vy: 0, level: 1 }
+    const open: Ball = { id: 2, x: 700, y: 150, vx: 0, vy: 0, level: 1 }
+
+    expect(
+      findBestHarpoonLane(blocked, blocked.x, 480, {
+        obstacles: [obstacle],
+        ballTimeScale: 0,
+      }),
+    ).toBeNull()
+    expect(
+      findBestHarpoonLane(open, open.x, 480, {
+        obstacles: [obstacle],
+        ballTimeScale: 0,
+      }),
+    ).not.toBeNull()
+  })
+
+  it('uses a platform edge when the ball overlaps that clear lane', () => {
+    const ball: Ball = { id: 1, x: 445, y: 150, vx: 0, vy: 0, level: 1 }
+    const lane = findBestHarpoonLane(ball, 480, 480, {
+      obstacles: [{ x: 450, y: 300, width: 60, height: 20 }],
+      ballTimeScale: 0,
+    })
+    expect(lane?.x).toBe(450)
   })
 })
 

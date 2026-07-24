@@ -630,6 +630,105 @@ export function predictHarpoonHit(
   return null
 }
 
+export type HarpoonLane = {
+  x: number
+  hitTime: number
+  cost: number
+}
+
+/** Finds the cheapest player column from which a shot can actually connect. */
+export function findBestHarpoonLane(
+  ball: Ball,
+  preferredX: number,
+  playerX: number,
+  options: {
+    bounds?: { min: number; max: number }
+    playerSpeed?: number
+    baseY?: number
+    harpoonSpeed?: number
+    dtSec?: number
+    obstacles?: Obstacle | readonly Obstacle[]
+    windAx?: number
+    well?: GravityWell | readonly GravityWell[]
+    ballTimeScale?: number
+    gravityScale?: number
+  } = {},
+): HarpoonLane | null {
+  const bounds = options.bounds ?? {
+    min: PLAYER_WIDTH / 2,
+    max: CANVAS_WIDTH - PLAYER_WIDTH / 2,
+  }
+  const playerSpeed = options.playerSpeed ?? 220
+  const harpoonSpeed = options.harpoonSpeed ?? HARPOON_SPEED
+  const baseY = options.baseY ?? PLAYER_Y
+  const clampX = (x: number) => Math.max(bounds.min, Math.min(bounds.max, x))
+  const candidateXs = new Set<number>()
+  const addCandidate = (x: number) =>
+    candidateXs.add(Math.round(clampX(x) * 1000) / 1000)
+
+  addCandidate(preferredX)
+  addCandidate(ball.x)
+  addCandidate(playerX)
+
+  const obstacles =
+    options.obstacles === undefined
+      ? []
+      : Array.isArray(options.obstacles)
+        ? options.obstacles
+        : [options.obstacles]
+  for (const obstacle of obstacles) {
+    const radius = LEVEL_RADIUS[ball.level]
+    const relevantLeft = Math.min(ball.x, preferredX) - radius
+    const relevantRight = Math.max(ball.x, preferredX) + radius
+    if (
+      obstacle.x <= relevantRight &&
+      obstacle.x + obstacle.width >= relevantLeft
+    ) {
+      // A wire exactly on a platform edge passes it and can still clip a
+      // nearby ball, so both edges are meaningful firing candidates.
+      addCandidate(obstacle.x)
+      addCandidate(obstacle.x + obstacle.width)
+    }
+  }
+
+  const climbSec = baseY / harpoonSpeed
+  const maxDrift =
+    LEVEL_RADIUS[ball.level] +
+    Math.abs(ball.vx) * (options.ballTimeScale ?? 1) * climbSec +
+    32
+  let best: HarpoonLane | null = null
+
+  for (const x of candidateXs) {
+    if (Math.abs(ball.x - x) > maxDrift) continue
+    const hitTime = predictHarpoonHit(ball, x, {
+      baseY,
+      harpoonSpeed,
+      dtSec: options.dtSec,
+      obstacles: options.obstacles,
+      windAx: options.windAx,
+      well: options.well,
+      ballTimeScale: options.ballTimeScale,
+      gravityScale: options.gravityScale,
+    })
+    if (hitTime === null) continue
+    const lane = {
+      x,
+      hitTime,
+      cost: Math.max(hitTime, Math.abs(x - playerX) / playerSpeed),
+    }
+    if (
+      best === null ||
+      lane.cost < best.cost ||
+      (lane.cost === best.cost &&
+        Math.abs(lane.x - playerX) < Math.abs(best.x - playerX))
+    ) {
+      best = lane
+    }
+  }
+
+  return best
+}
+
 /**
  * Closed-form seconds until a falling item drops to `rowY` (the player's
  * catch row). Items accelerate at ITEM_GRAVITY and despawn past the floor,
